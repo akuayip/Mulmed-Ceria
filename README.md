@@ -6,9 +6,9 @@ COMING SOON
 ## Anggota Kelompok
 | Nama Lengkap           | NIM        | GitHub ID      |
 |-----------------------|------------|---------------|
-| Cindy Nadila Putri    | 122140002  | zidbytes       |
-| Arief Rahman Hakim    | 122140083  | akuayip        |
-| Zidan Raihan          | 122140100  | cindynadilaptr |
+| Cindy Nadila Putri    | 122140002  | [zidbytes](https://github.com/zidbytes)       |
+| Arief Rahman Hakim    | 122140083  | [akuayip](https://github.com/akuayip)        |
+| Zidan Raihan          | 122140100  | [cindynadilaptr](https://github.com/cindynadilaptr) |
 
 > Silakan lengkapi kolom GitHub ID jika sudah tersedia.
 
@@ -36,7 +36,6 @@ COMING SOON
    cd Mulmed-Ceria
    ```
 3. **Instalasi dependensi**
-   COMING SOO
-
+   COMING SOON
 4. **Menjalankan Program**
-   COMING SOO
+   COMING SOON
