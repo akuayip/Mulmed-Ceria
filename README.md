@@ -15,7 +15,7 @@ COMING SOON
 ## Logbook Mingguan
 | Minggu | Tanggal        | Progress/Update                                                                 |
 |--------|----------------|-------------------------------------------------------------------------------|
-| 1      |                |                                                                               |
+| 1      |28-10-2025      | Membuat repository github dan diskusi ide                                     |
 | 2      |                |                                                                               |
 | 3      |                |                                                                               |
 | 4      |                |                                                                               |
