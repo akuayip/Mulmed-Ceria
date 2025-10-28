@@ -1,16 +1,16 @@
-# Mulmed-Ceria
+# Cam-Fu
 
 ## Deskripsi Project
-COMING SOON
 
+Cam-Fu adalah game interaktif berbasis webcam yang menjadikan pemain sebagai petarung kungfu digital. Pemain meninju ikon-ikon melayang di layar untuk mendapatkan poin, namun harus menghindari jebakan berupa sarung tinju melayang yang akan menyerang balik dan mengurangi skor. Game ini menggunakan deteksi gerakan tangan real-time untuk mengontrol aksi di layar. Visual berupa stickman dan efek suara kungfu, layaknya game VR hanya dengan webcam.
+   
 ## Anggota Kelompok
-| Nama Lengkap           | NIM        | GitHub ID      |
-|-----------------------|------------|---------------|
-| Cindy Nadila Putri    | 122140002  | [zidbytes](https://github.com/zidbytes)       |
-| Arief Rahman Hakim    | 122140083  | [akuayip](https://github.com/akuayip)        |
-| Zidan Raihan          | 122140100  | [cindynadilaptr](https://github.com/cindynadilaptr) |
 
-> Silakan lengkapi kolom GitHub ID jika sudah tersedia.
+| Nama Lengkap          | NIM       | GitHub ID                                           |
+| --------------------- | --------- | --------------------------------------------------- |
+| Cindy Nadila Putri    | 122140002 | [cindynadilaptr](https://github.com/cindynadilaptr) |
+| M. Arief Rahman Hakim | 122140083 | [akuayip](https://github.com/akuayip)               |
+| Zidan Raihan          | 122140100 | [zidbytes](https://github.com/zidbytes)             |
 
 ## Logbook Mingguan
 | Minggu | Tanggal        | Progress/Update                                                                 |
