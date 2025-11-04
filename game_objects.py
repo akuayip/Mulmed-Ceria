@@ -5,6 +5,7 @@ Defines Target, Obstacle, and PowerUp classes for the game.
 
 import pygame
 import random
+import math  
 from typing import Tuple
 
 
@@ -14,13 +15,6 @@ class GameObject:
     def __init__(self, x: int, y: int, radius: int, color: Tuple[int, int, int], speed: float):
         """
         Initialize game object.
-
-        Args:
-            x: X position
-            y: Y position
-            radius: Object radius
-            color: RGB color tuple
-            speed: Movement speed
         """
         self.x = x
         self.y = y
@@ -31,7 +25,7 @@ class GameObject:
 
     def update(self, dt: float):
         """Update object position."""
-        pass
+        pass  # To be overridden by subclasses
 
     def draw(self, surface: pygame.Surface):
         """Draw object on surface."""
@@ -47,35 +41,35 @@ class Target(GameObject):
     """
     Target object that player should punch for points.
     """
+    DEFAULT_RADIUS = 25
+    SPEED_RANGE = (50, 150)  # (min_speed, max_speed)
+    POINTS = 10
+    COLOR = (0, 255, 0)  # Green
 
     def __init__(self, x: int, y: int, screen_width: int, screen_height: int):
         """
         Initialize Target.
-
-        Args:
-            x: Starting X position
-            y: Starting Y position
-            screen_width: Width of game screen
-            screen_height: Height of game screen
         """
-        # Green circle for target
-        super().__init__(x, y, radius=25, color=(0, 255, 0), speed=random.uniform(50, 150))
+        super().__init__(
+            x, y,
+            radius=self.DEFAULT_RADIUS,
+            color=self.COLOR,
+            speed=random.uniform(*self.SPEED_RANGE)  
+        )
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.direction_x = random.choice([-1, 1])
         self.direction_y = random.choice([-1, 1])
-        self.points = 10
+        self.points = self.POINTS
 
     def update(self, dt: float):
         """Move target and bounce off walls."""
         if not self.active:
             return
 
-        # Update position
         self.x += self.direction_x * self.speed * dt
         self.y += self.direction_y * self.speed * dt
 
-        # Bounce off walls
         if self.x - self.radius <= 0 or self.x + self.radius >= self.screen_width:
             self.direction_x *= -1
             self.x = max(self.radius, min(self.x, self.screen_width - self.radius))
@@ -87,11 +81,8 @@ class Target(GameObject):
     def draw(self, surface: pygame.Surface):
         """Draw target with inner circle."""
         if self.active:
-            # Outer circle
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
-            # Inner circle (bullseye)
             pygame.draw.circle(surface, (255, 255, 255), (int(self.x), int(self.y)), self.radius // 2)
-            # Center dot
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), 5)
 
 
@@ -99,26 +90,30 @@ class Obstacle(GameObject):
     """
     Obstacle object that damages player if hit.
     """
+    DEFAULT_RADIUS = 30
+    SPEED_RANGE = (80, 200)
+    COLOR = (255, 0, 0)  # Red
+    DAMAGE = 20
+    LIVES_COST = 1
+    LIFETIME = 10.0  # Seconds
+    DEACTIVATE_DISTANCE = 50  # Distance from target to deactivate
 
     def __init__(self, x: int, y: int, screen_width: int, screen_height: int):
         """
         Initialize Obstacle.
-
-        Args:
-            x: Starting X position
-            y: Starting Y position
-            screen_width: Width of game screen
-            screen_height: Height of game screen
         """
-        # Red circle for obstacle
-        super().__init__(x, y, radius=30, color=(255, 0, 0), speed=random.uniform(80, 200))
+        super().__init__(
+            x, y,
+            radius=self.DEFAULT_RADIUS,
+            color=self.COLOR,
+            speed=random.uniform(*self.SPEED_RANGE)
+        )
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.damage = 20
-        self.lives_cost = 1
-        self.lifetime = 10.0  # Hilang otomatis setelah 10 detik
+        self.damage = self.DAMAGE
+        self.lives_cost = self.LIVES_COST
         self.time_alive = 0
-        # Set target sekali saat dibuat
+        
         self.target_x = self.screen_width // 2 + random.randint(-100, 100)
         self.target_y = self.screen_height // 2 + random.randint(-100, 100)
 
@@ -129,17 +124,15 @@ class Obstacle(GameObject):
 
         # Update lifetime
         self.time_alive += dt
-        if self.time_alive >= self.lifetime:
+        if self.time_alive >= self.LIFETIME:
             self.active = False
             return
 
-        # Calculate direction to target
         dx = self.target_x - self.x
         dy = self.target_y - self.y
         distance = (dx**2 + dy**2) ** 0.5
 
-        # Hilang jika sudah sampai di dekat target (radius 50 pixel)
-        if distance < 50:
+        if distance < self.DEACTIVATE_DISTANCE:
             self.active = False
             return
 
@@ -150,22 +143,16 @@ class Obstacle(GameObject):
     def draw(self, surface: pygame.Surface):
         """Draw obstacle with warning sign."""
         if self.active:
-            # Main circle
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
-            # Warning cross
             pygame.draw.line(
-                surface,
-                (255, 255, 255),
+                surface, (255, 255, 255),
                 (int(self.x - 10), int(self.y - 10)),
-                (int(self.x + 10), int(self.y + 10)),
-                3
+                (int(self.x + 10), int(self.y + 10)), 3
             )
             pygame.draw.line(
-                surface,
-                (255, 255, 255),
+                surface, (255, 255, 255),
                 (int(self.x + 10), int(self.y - 10)),
-                (int(self.x - 10), int(self.y + 10)),
-                3
+                (int(self.x - 10), int(self.y + 10)), 3
             )
 
 
@@ -173,25 +160,25 @@ class PowerUp(GameObject):
     """
     Power-up object that gives player bonus.
     """
-
     TYPES = ['shield', 'double_score', 'slow_motion']
+    DEFAULT_RADIUS = 20
+    COLOR = (255, 255, 0)  # Yellow
+    SPEED = 100  
+    LIFETIME = 5.0  # Seconds
 
     def __init__(self, x: int, y: int, screen_width: int, screen_height: int):
         """
         Initialize PowerUp.
-
-        Args:
-            x: Starting X position
-            y: Starting Y position
-            screen_width: Width of game screen
-            screen_height: Height of game screen
         """
-        # Yellow circle for power-up
-        super().__init__(x, y, radius=20, color=(255, 255, 0), speed=100)
+        super().__init__(
+            x, y,
+            radius=self.DEFAULT_RADIUS,
+            color=self.COLOR,
+            speed=self.SPEED
+        )
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.type = random.choice(self.TYPES)
-        self.lifetime = 5.0  # Disappear after 5 seconds
         self.time_alive = 0
 
     def update(self, dt: float):
@@ -200,22 +187,20 @@ class PowerUp(GameObject):
             return
 
         self.time_alive += dt
-        if self.time_alive >= self.lifetime:
+        if self.time_alive >= self.LIFETIME:
             self.active = False
             return
 
         # Floating effect (sine wave)
-        import math
         self.y += math.sin(self.time_alive * 3) * 2
 
     def draw(self, surface: pygame.Surface):
         """Draw power-up with star effect."""
         if self.active:
-            # Main circle
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
+            
             # Star points
             points = []
-            import math
             for i in range(5):
                 angle = math.pi * 2 * i / 5 - math.pi / 2
                 px = self.x + math.cos(angle) * (self.radius - 5)
