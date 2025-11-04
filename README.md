@@ -16,7 +16,7 @@ Cam-Fu adalah game interaktif berbasis webcam yang menjadikan pemain sebagai pet
 | Minggu | Tanggal        | Progress/Update                                                                 |
 |--------|----------------|-------------------------------------------------------------------------------|
 | 1      |28-10-2025      | Membuat repository github dan diskusi ide                                     |
-| 2      |                |                                                                               |
+| 2      |04-11-2025      | Memulai implementasi MediaPipe untuk deteksi tangan dan integrasi sound effects |
 | 3      |                |                                                                               |
 | 4      |                |                                                                               |
 | 5      |                |                                                                               |
