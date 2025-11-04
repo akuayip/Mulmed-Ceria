@@ -118,6 +118,37 @@ class StickmanRenderer:
                     self.line_thickness
                 )
 
+        # Draw head circle
+        # Calculate center of head based on nose position
+        nose = pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.NOSE.value, width, height
+        )
+        left_ear = pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.LEFT_EAR.value, width, height
+        )
+        right_ear = pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.RIGHT_EAR.value, width, height
+        )
+        
+        if nose and left_ear and right_ear:
+            # Calculate head center (slightly above nose)
+            head_center_x = nose[0]
+            head_center_y = nose[1] - 10  # Slightly above nose
+            head_center = (head_center_x, head_center_y)
+            
+            # Calculate head radius based on ear distance
+            ear_distance = abs(left_ear[0] - right_ear[0])
+            head_radius = int(ear_distance * 0.75)  # Radius is about 75% of ear distance
+            
+            # Draw the head circle
+            cv2.circle(
+                canvas,
+                head_center,
+                head_radius,
+                self.line_color,
+                self.line_thickness
+            )
+
         # Draw joints (circles)
         for landmark_enum in self.mp_pose:
             point = pose_detector.get_landmark_position(

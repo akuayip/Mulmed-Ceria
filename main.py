@@ -15,7 +15,7 @@ class StickmanApp:
     Main application class for real-time stickman pose detection.
     """
 
-    def __init__(self, camera_id=0):
+    def __init__(self, camera_id=1):
         """
         Initialize the Stickman Application.
 
