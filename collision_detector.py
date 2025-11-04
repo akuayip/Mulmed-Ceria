@@ -59,27 +59,33 @@ class CollisionDetector:
 
     def check_hand_collision(
         self,
-        left_hand: Optional[Tuple[int, int]],
-        right_hand: Optional[Tuple[int, int]],
+        left_hand_points: list,
+        right_hand_points: list,
         object_pos: Tuple[int, int],
         object_radius: int
     ) -> str:
         """
-        Check if either hand collides with an object.
+        Check if any hand point collides with an object.
 
         Args:
-            left_hand: Left hand wrist position
-            right_hand: Right hand wrist position
+            left_hand_points: List of left hand landmark positions (wrist, fingers)
+            right_hand_points: List of right hand landmark positions (wrist, fingers)
             object_pos: Object center position
             object_radius: Object radius
 
         Returns:
             str: 'left', 'right', or '' (no collision)
         """
-        if self.check_collision(left_hand, object_pos, object_radius):
-            return 'left'
-        elif self.check_collision(right_hand, object_pos, object_radius):
-            return 'right'
+        # Check all left hand points
+        for point in left_hand_points:
+            if self.check_collision(point, object_pos, object_radius):
+                return 'left'
+        
+        # Check all right hand points
+        for point in right_hand_points:
+            if self.check_collision(point, object_pos, object_radius):
+                return 'right'
+        
         return ''
 
     def check_body_collision(

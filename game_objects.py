@@ -116,20 +116,32 @@ class Obstacle(GameObject):
         self.screen_height = screen_height
         self.damage = 20
         self.lives_cost = 1
+        self.lifetime = 10.0  # Hilang otomatis setelah 10 detik
+        self.time_alive = 0
+        # Set target sekali saat dibuat
+        self.target_x = self.screen_width // 2 + random.randint(-100, 100)
+        self.target_y = self.screen_height // 2 + random.randint(-100, 100)
 
     def update(self, dt: float):
         """Move obstacle towards player (center-ish)."""
         if not self.active:
             return
 
-        # Move towards center with some randomness
-        target_x = self.screen_width // 2 + random.randint(-100, 100)
-        target_y = self.screen_height // 2 + random.randint(-100, 100)
+        # Update lifetime
+        self.time_alive += dt
+        if self.time_alive >= self.lifetime:
+            self.active = False
+            return
 
-        # Calculate direction
-        dx = target_x - self.x
-        dy = target_y - self.y
+        # Calculate direction to target
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
         distance = (dx**2 + dy**2) ** 0.5
+
+        # Hilang jika sudah sampai di dekat target (radius 50 pixel)
+        if distance < 50:
+            self.active = False
+            return
 
         if distance > 0:
             self.x += (dx / distance) * self.speed * dt

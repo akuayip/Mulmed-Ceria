@@ -224,15 +224,45 @@ class GameEngine:
         Args:
             landmarks: Pose landmarks
         """
-        # Get hand positions
-        left_wrist = self.pose_detector.get_landmark_position(
-            landmarks, self.mp_pose.LEFT_WRIST.value,
-            self.screen_width, self.screen_height
-        )
-        right_wrist = self.pose_detector.get_landmark_position(
-            landmarks, self.mp_pose.RIGHT_WRIST.value,
-            self.screen_width, self.screen_height
-        )
+        # Get all left hand points (wrist + fingers)
+        left_hand_points = [
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.LEFT_WRIST.value,
+                self.screen_width, self.screen_height
+            ),
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.LEFT_PINKY.value,
+                self.screen_width, self.screen_height
+            ),
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.LEFT_INDEX.value,
+                self.screen_width, self.screen_height
+            ),
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.LEFT_THUMB.value,
+                self.screen_width, self.screen_height
+            ),
+        ]
+        
+        # Get all right hand points (wrist + fingers)
+        right_hand_points = [
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.RIGHT_WRIST.value,
+                self.screen_width, self.screen_height
+            ),
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.RIGHT_PINKY.value,
+                self.screen_width, self.screen_height
+            ),
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.RIGHT_INDEX.value,
+                self.screen_width, self.screen_height
+            ),
+            self.pose_detector.get_landmark_position(
+                landmarks, self.mp_pose.RIGHT_THUMB.value,
+                self.screen_width, self.screen_height
+            ),
+        ]
 
         # Check target collisions (hand punch)
         for target in self.targets[:]:
@@ -240,7 +270,7 @@ class GameEngine:
                 continue
             
             hand_hit = self.collision_detector.check_hand_collision(
-                left_wrist, right_wrist,
+                left_hand_points, right_hand_points,
                 target.get_position(), target.radius
             )
             
@@ -256,7 +286,7 @@ class GameEngine:
                 continue
             
             hand_hit = self.collision_detector.check_hand_collision(
-                left_wrist, right_wrist,
+                left_hand_points, right_hand_points,
                 powerup.get_position(), powerup.radius
             )
             
@@ -401,6 +431,34 @@ class GameEngine:
             (self.mp_pose.RIGHT_HIP, self.mp_pose.RIGHT_KNEE),
             (self.mp_pose.RIGHT_KNEE, self.mp_pose.RIGHT_ANKLE),
         ]
+
+        # Draw head circle
+        # Calculate center of head based on nose position
+        nose = self.pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.NOSE.value,
+            self.screen_width, self.screen_height
+        )
+        left_ear = self.pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.LEFT_EAR.value,
+            self.screen_width, self.screen_height
+        )
+        right_ear = self.pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.RIGHT_EAR.value,
+            self.screen_width, self.screen_height
+        )
+        
+        if nose and left_ear and right_ear:
+            # Calculate head center (slightly above nose)
+            head_center_x = nose[0]
+            head_center_y = nose[1] - 10  # Slightly above nose
+            head_center = (head_center_x, head_center_y)
+            
+            # Calculate head radius based on ear distance
+            ear_distance = abs(left_ear[0] - right_ear[0])
+            head_radius = int(ear_distance * 0.75)  # Radius is about 75% of ear distance
+            
+            # Draw the head circle
+            pygame.draw.circle(self.screen, self.GREEN, head_center, head_radius, 3)
 
         # Draw connections
         for connection in connections:
