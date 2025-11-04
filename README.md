@@ -27,15 +27,59 @@ Cam-Fu adalah game interaktif berbasis webcam yang menjadikan pemain sebagai pet
 > Catatan: Silakan isi logbook setiap minggu sesuai perkembangan project.
 
 ## Instruksi Instalasi dan Penggunaan
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/akuayip/Mulmed-Ceria.git
-   ```
-2. **Masuk ke folder project**
-   ```bash
-   cd Mulmed-Ceria
-   ```
-3. **Instalasi dependensi**
-   COMING SOON
-4. **Menjalankan Program**
-   COMING SOON
+
+### Prasyarat
+- Python 3.10 atau 3.11 (MediaPipe tidak support Python 3.12+)
+- Webcam (built-in atau external)
+- Git
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/akuayip/CamFu.git
+cd CamFu
+```
+
+### 2. Setup Python Environment
+
+Pilih salah satu metode berikut:
+
+#### **Metode A: Menggunakan Anaconda (Recommended)**
+
+```bash
+# Buat environment baru dengan Python 3.10
+conda create -n camfu python=3.10 -y
+
+# Aktifkan environment
+conda activate camfu
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### **Metode B: Menggunakan UV (Fast Python Package Manager)**
+
+```bash
+# Install uv menggunakan pip jika belum
+pip install uv
+
+# Buat virtual environment dengan uv
+uv venv --python 3.10
+
+# Aktifkan environment
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# Windows CMD:
+.venv\Scripts\activate.bat
+# Linux/Mac:
+source .venv/bin/activate
+
+# Install dependencies dengan uv (lebih cepat)
+uv pip install -r requirements.txt
+```
+
+### 3. Menjalankan Program
+
+```bash
+python main.py
+```
+
