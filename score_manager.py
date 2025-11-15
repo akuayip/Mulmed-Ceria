@@ -61,7 +61,7 @@ class ScoreManager:
         """
         self.score = max(0, self.score - points)
 
-    def lose_life(self):
+    def lose_life(self, sound_manager):
         """Decrease lives by 1."""
         if self.shield_active:
             # Shield protects from damage
@@ -70,6 +70,9 @@ class ScoreManager:
         self.lives -= 1
         if self.lives <= 0:
             self.game_over = True
+            sound_manager.play_sound('game_over')
+        else:
+            sound_manager.play_sound('damage')
         return True
 
     def add_life(self):

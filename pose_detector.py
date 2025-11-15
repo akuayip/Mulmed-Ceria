@@ -78,6 +78,12 @@ class PoseDetector:
             y = int(landmark.y * frame_height)
             return (x, y)
         return None
+    
+    def to_screen_coordinates(self, x, y, cam_w, cam_h, screen_w, screen_h):
+        """Convert posisi landmark dari ukuran kamera → layar pygame."""
+        sx = int((x / cam_w) * screen_w)
+        sy = int((y / cam_h) * screen_h)
+        return (sx, sy)
 
     def close(self):
         """Release resources."""
