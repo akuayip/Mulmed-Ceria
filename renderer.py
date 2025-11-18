@@ -20,6 +20,10 @@ class GameRenderer:
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
+    
+    def update_screen_size(self, new_w, new_h):
+        self.screen_width = new_w
+        self.screen_height = new_h
         
         # Colors 
         self.BLACK = (0, 0, 0)
