@@ -195,24 +195,53 @@ class GameEngine:
                 self.score_manager.activate_powerup(powerup.type)
                 self.sound_manager.play_sound('powerup')
 
-        # Check obstacle collisions
-        body_points = [
-            self.pose_detector.get_landmark_position(
-                landmarks, self.mp_pose.NOSE.value,
-                self.screen_width, self.screen_height
-            ),
-        ]
+        # Check obstacle collisions - hanya dengan lingkaran kepala
+        # Dapatkan posisi nose dan telinga untuk menghitung head circle
+        nose = self.pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.NOSE.value,
+            self.screen_width, self.screen_height
+        )
+        left_ear = self.pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.LEFT_EAR.value,
+            self.screen_width, self.screen_height
+        )
+        right_ear = self.pose_detector.get_landmark_position(
+            landmarks, self.mp_pose.RIGHT_EAR.value,
+            self.screen_width, self.screen_height
+        )
 
+        # Hitung head_center dan head_radius (sama seperti di renderer)
+        head_center = None
+        head_radius = 30
+        
+        if nose:
+            head_center = (nose[0], nose[1])
+            
+            # Hitung radius berdasarkan jarak telinga (SAMA dengan renderer.py)
+            if left_ear and right_ear:
+                ear_distance = abs(left_ear[0] - right_ear[0])
+                head_radius = int(ear_distance * 0.75)
+
+        # Cek collision dengan obstacle menggunakan lingkaran kepala
         for obstacle in self.obstacles[:]:
             if not obstacle.active: continue
             
-            if self.collision_detector.check_body_collision(
-                body_points, obstacle.get_position(), obstacle.radius
-            ):
-                obstacle.active = False
-                if self.score_manager.lose_life():
-                    self.score_manager.subtract_score(obstacle.damage)
-                    self.sound_manager.play_sound('damage')
+            # Hanya cek collision jika head_center ada
+            if head_center:
+                # Hitung jarak antara pusat kepala dan pusat obstacle
+                distance = self.collision_detector.point_distance(
+                    head_center, obstacle.get_position()
+                )
+                
+                # Collision terjadi ketika TEPI kedua lingkaran bersentuhan
+                # Jarak antar pusat <= jumlah kedua radius
+                collision_threshold = head_radius + obstacle.radius
+                
+                if distance <= collision_threshold:
+                    obstacle.active = False
+                    if self.score_manager.lose_life():
+                        self.score_manager.subtract_score(obstacle.damage)
+                        self.sound_manager.play_sound('damage')
 
 
     def run(self):
