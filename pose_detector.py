@@ -181,9 +181,10 @@ class PoseDetector:
             # Determine if it's left or right hand
             handedness = hands_results.multi_handedness[idx].classification[0].label
             
-            # MediaPipe returns "Left"/"Right" based on the person's perspective
-            # but the camera is mirrored, so we need to flip it
-            hand_type = 'right_hand' if handedness == 'Left' else 'left_hand'
+            # Karena frame di-mirror di game_engine (cv2.flip), 
+            # MediaPipe "Left" = tangan kiri user (tidak perlu swap)
+            # MediaPipe "Right" = tangan kanan user (tidak perlu swap)
+            hand_type = 'left_hand' if handedness == 'Left' else 'right_hand'
             
             # Get wrist position (landmark 0) as hand position
             wrist = hand_landmarks.landmark[self.WRIST]
