@@ -10,6 +10,7 @@ from typing import Tuple, Optional
 class CollisionDetector:
     """
     Detects collisions between body parts (hands, body) and game objects.
+    Supports fist gesture detection for punch validation.
     """
 
     def __init__(self, collision_radius=30):
@@ -59,32 +60,51 @@ class CollisionDetector:
 
     def check_hand_collision(
         self,
-        left_hand_points: list,
-        right_hand_points: list,
+        left_hand_pos: Optional[Tuple[int, int]],
+        right_hand_pos: Optional[Tuple[int, int]],
+        left_is_fist: bool,
+        right_is_fist: bool,
         object_pos: Tuple[int, int],
-        object_radius: int
+        object_radius: int,
+        require_fist: bool = False
     ) -> str:
         """
-        Check if any hand point collides with an object.
-
+        Check if any hand collides with an object.
+        
         Args:
-            left_hand_points: List of left hand landmark positions (wrist, fingers)
-            right_hand_points: List of right hand landmark positions (wrist, fingers)
+            left_hand_pos: Position of left hand (wrist/palm center)
+            right_hand_pos: Position of right hand (wrist/palm center)
+            left_is_fist: Whether left hand is making a fist
+            right_is_fist: Whether right hand is making a fist
             object_pos: Object center position
             object_radius: Object radius
+            require_fist: If True, collision only valid when hand is fist (for punching targets)
+                         If False, any hand contact is valid (for grabbing powerups)
 
         Returns:
             str: 'left', 'right', or '' (no collision)
         """
-        # Check all left hand points
-        for point in left_hand_points:
-            if self.check_collision(point, object_pos, object_radius):
-                return 'left'
+        # Check left hand
+        if left_hand_pos is not None:
+            if self.check_collision(left_hand_pos, object_pos, object_radius):
+                # If fist is required, check fist status
+                if require_fist:
+                    if left_is_fist:
+                        return 'left'
+                else:
+                    # No fist required (e.g., for powerups)
+                    return 'left'
         
-        # Check all right hand points
-        for point in right_hand_points:
-            if self.check_collision(point, object_pos, object_radius):
-                return 'right'
+        # Check right hand
+        if right_hand_pos is not None:
+            if self.check_collision(right_hand_pos, object_pos, object_radius):
+                # If fist is required, check fist status
+                if require_fist:
+                    if right_is_fist:
+                        return 'right'
+                else:
+                    # No fist required (e.g., for powerups)
+                    return 'right'
         
         return ''
 
