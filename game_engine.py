@@ -63,6 +63,12 @@ class GameEngine:
         
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
+        
+        # Hand tracking state
+        self.hand_info = {
+            'left_hand': {'position': None, 'is_fist': False},
+            'right_hand': {'position': None, 'is_fist': False}
+        }
 
     def initialize(self):
         """Initialize camera and pose detector."""
@@ -76,7 +82,7 @@ class GameEngine:
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         
-        print("Initializing pose detector...")
+        print("Initializing pose detector with hand tracking...")
         self.pose_detector = PoseDetector(
             static_image_mode=False,
             model_complexity=1,
@@ -111,12 +117,20 @@ class GameEngine:
         self.powerups.clear()
         self.spawn_manager.reset_timers() 
 
-    def update(self, dt: float, landmarks):
+    def update(self, dt: float, landmarks, hand_info):
         """
         Update game logic.
+        
+        Args:
+            dt: Delta time in seconds
+            landmarks: Body pose landmarks
+            hand_info: Hand tracking information with fist status
         """
         if self.paused or self.score_manager.game_over:
             return
+
+        # Store hand info for rendering
+        self.hand_info = hand_info
 
         # Apply slow motion if active
         if self.score_manager.slow_motion_active:
@@ -142,60 +156,63 @@ class GameEngine:
 
         # Check collisions if pose detected
         if landmarks:
-            self.check_collisions(landmarks)
+            self.check_collisions(landmarks, hand_info)
 
         # Remove inactive objects
         self.targets = [t for t in self.targets if t.active]
         self.obstacles = [o for o in self.obstacles if o.active]
 
 
-    def check_collisions(self, landmarks):
+    def check_collisions(self, landmarks, hand_info):
         """
-        Check collisions between pose and game objects.
-        (Fungsi ini tetap di sini karena ini adalah LOGIKA game)
-        """
-        # Get all left hand points
-        left_hand_points = [
-            self.pose_detector.get_landmark_position(
-                landmarks, self.mp_pose.LEFT_WRIST.value,
-                self.screen_width, self.screen_height
-            ),
-        ]
+        Check collisions between pose/hands and game objects.
         
-        # Get all right hand points
-        right_hand_points = [
-            self.pose_detector.get_landmark_position(
-                landmarks, self.mp_pose.RIGHT_WRIST.value,
-                self.screen_width, self.screen_height
-            ),
-        ]
+        Args:
+            landmarks: Body pose landmarks
+            hand_info: Hand tracking information with fist status
+        """
+        # Extract hand positions and fist status
+        left_hand_pos = hand_info['left_hand']['position']
+        right_hand_pos = hand_info['right_hand']['position']
+        left_is_fist = hand_info['left_hand']['is_fist']
+        right_is_fist = hand_info['right_hand']['is_fist']
 
-        # Check target collisions
+        # Check target collisions (REQUIRES FIST to punch!)
         for target in self.targets[:]:
-            if not target.active: continue
+            if not target.active: 
+                continue
             
-            if self.collision_detector.check_hand_collision(
-                left_hand_points, right_hand_points,
-                target.get_position(), target.radius
-            ):
+            collision_hand = self.collision_detector.check_hand_collision(
+                left_hand_pos, right_hand_pos,
+                left_is_fist, right_is_fist,
+                target.get_position(), target.radius,
+                require_fist=True  # Must be fist to punch targets!
+            )
+            
+            if collision_hand:  # Returns 'left', 'right', or ''
                 target.active = False
                 self.score_manager.add_score(target.points)
                 self.score_manager.targets_hit += 1
                 self.sound_manager.play_sound('hit')
 
-        # Check powerup collisions
+        # Check powerup collisions (NO FIST REQUIRED - open hand can grab)
         for powerup in self.powerups[:]:
-            if not powerup.active: continue
+            if not powerup.active: 
+                continue
             
-            if self.collision_detector.check_hand_collision(
-                left_hand_points, right_hand_points,
-                powerup.get_position(), powerup.radius
-            ):
+            collision_hand = self.collision_detector.check_hand_collision(
+                left_hand_pos, right_hand_pos,
+                left_is_fist, right_is_fist,
+                powerup.get_position(), powerup.radius,
+                require_fist=False  # Open hand can grab powerups
+            )
+            
+            if collision_hand:
                 powerup.active = False
                 self.score_manager.activate_powerup(powerup.type)
                 self.sound_manager.play_sound('powerup')
 
-        # Check obstacle collisions
+        # Check obstacle collisions (body collision, not hand)
         body_points = [
             self.pose_detector.get_landmark_position(
                 landmarks, self.mp_pose.NOSE.value,
@@ -204,7 +221,8 @@ class GameEngine:
         ]
 
         for obstacle in self.obstacles[:]:
-            if not obstacle.active: continue
+            if not obstacle.active: 
+                continue
             
             if self.collision_detector.check_body_collision(
                 body_points, obstacle.get_position(), obstacle.radius
@@ -239,10 +257,17 @@ class GameEngine:
             frame = cv2.flip(frame, 1)
 
             # Detect pose
-            _, landmarks = self.pose_detector.detect_pose(frame)
+            frame_rgb, landmarks = self.pose_detector.detect_pose(frame)
+            
+            # Detect hands and get fist status
+            hand_info = self.pose_detector.get_hand_info(
+                frame_rgb, 
+                self.screen_width, 
+                self.screen_height
+            )
 
             # Update game logic
-            self.update(dt, landmarks)
+            self.update(dt, landmarks, hand_info)
             
             # 1. Clear screen
             self.renderer.clear_screen()
@@ -253,11 +278,14 @@ class GameEngine:
             # 3. Draw stickman overlay
             if landmarks:
                 self.renderer.draw_stickman(landmarks, self.pose_detector) 
+            
+            # 4. Draw hand landmarks and fist indicators
+            self.renderer.draw_hand_indicators(hand_info)
 
-            # 4. Draw UI elements
-            self.renderer.draw_ui(self.score_manager, self.clock)
+            # 5. Draw UI elements
+            self.renderer.draw_ui(self.score_manager, self.clock, hand_info)
 
-            # 5. Update display
+            # 6. Update display
             pygame.display.flip()
 
         # Cleanup
