@@ -8,7 +8,7 @@ import mediapipe as mp
 
 class GameRenderer:
     """
-    Handles all rendering tasks, including UI, stickman, and objects.
+    Handles all rendering tasks, including UI, stickman, hands, and objects.
     """
 
     def __init__(self, screen):
@@ -28,11 +28,15 @@ class GameRenderer:
         self.RED = (255, 0, 0)
         self.YELLOW = (255, 255, 0)
         self.BLUE = (0, 150, 255)
+        self.ORANGE = (255, 165, 0)
+        self.CYAN = (0, 255, 255)
+        self.PURPLE = (200, 0, 255)
         
         # Fonts
         self.font_large = pygame.font.Font(None, 48)
         self.font_medium = pygame.font.Font(None, 36)
         self.font_small = pygame.font.Font(None, 24)
+        self.font_tiny = pygame.font.Font(None, 20)
         
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
@@ -52,9 +56,57 @@ class GameRenderer:
         for powerup in powerups:
             powerup.draw(self.screen)
 
-    def draw_ui(self, score_manager, clock):
-        """Draw UI elements (score, lives, etc.)."""
-        # Draw FPS (top left corner)
+    def draw_hand_indicators(self, hand_info):
+        """
+        Draw visual indicators for hands and fist status.
+        
+        Args:
+            hand_info: Dictionary containing left_hand and right_hand info
+        """
+        # Draw left hand indicator
+        if hand_info['left_hand']['position']:
+            pos = hand_info['left_hand']['position']
+            is_fist = hand_info['left_hand']['is_fist']
+            
+            # Draw circle around hand
+            color = self.RED if is_fist else self.CYAN
+            pygame.draw.circle(self.screen, color, pos, 35, 3)
+            
+            # Draw fist icon/indicator
+            if is_fist:
+                # Draw filled circle for fist
+                pygame.draw.circle(self.screen, self.RED, pos, 20)
+                # Draw "FIST" text above
+                fist_text = self.font_tiny.render("FIST", True, self.RED)
+                self.screen.blit(fist_text, (pos[0] - 20, pos[1] - 50))
+        
+        # Draw right hand indicator
+        if hand_info['right_hand']['position']:
+            pos = hand_info['right_hand']['position']
+            is_fist = hand_info['right_hand']['is_fist']
+            
+            # Draw circle around hand
+            color = self.RED if is_fist else self.CYAN
+            pygame.draw.circle(self.screen, color, pos, 35, 3)
+            
+            # Draw fist icon/indicator
+            if is_fist:
+                # Draw filled circle for fist
+                pygame.draw.circle(self.screen, self.RED, pos, 20)
+                # Draw "FIST" text above
+                fist_text = self.font_tiny.render("FIST", True, self.RED)
+                self.screen.blit(fist_text, (pos[0] - 20, pos[1] - 50))
+
+    def draw_ui(self, score_manager, clock, hand_info):
+        """
+        Draw UI elements (score, lives, hand status, etc.).
+        
+        Args:
+            score_manager: ScoreManager instance
+            clock: Pygame clock
+            hand_info: Hand tracking information
+        """
+        # Draw FPS (top right corner)
         fps = int(clock.get_fps())
         fps_text = self.font_small.render(f"FPS: {fps}", True, self.GREEN)
         self.screen.blit(fps_text, (self.screen_width - 100, 20))
@@ -88,13 +140,43 @@ class GameRenderer:
                 f"SLOW-MO: {int(score_manager.slow_motion_duration)}s", True, self.GREEN
             )
             self.screen.blit(slow_text, (20, y_offset))
+            y_offset += 30
 
-        # Draw instructions
-        inst_text = self.font_small.render(
-            "PUNCH targets (green) | DODGE obstacles (red) | GRAB powerups (yellow)",
+        # Draw hand status indicators (bottom left)
+        hand_status_y = self.screen_height - 100
+        
+        # Title
+        status_title = self.font_small.render("HAND STATUS:", True, self.WHITE)
+        self.screen.blit(status_title, (20, hand_status_y))
+        
+        # Left hand status
+        left_status = "✊ FIST" if hand_info['left_hand']['is_fist'] else "✋ OPEN"
+        left_color = self.RED if hand_info['left_hand']['is_fist'] else self.CYAN
+        left_detected = hand_info['left_hand']['position'] is not None
+        
+        if left_detected:
+            left_text = self.font_small.render(f"LEFT: {left_status}", True, left_color)
+        else:
+            left_text = self.font_small.render("LEFT: ---", True, (100, 100, 100))
+        self.screen.blit(left_text, (20, hand_status_y + 30))
+        
+        # Right hand status
+        right_status = "✊ FIST" if hand_info['right_hand']['is_fist'] else "✋ OPEN"
+        right_color = self.RED if hand_info['right_hand']['is_fist'] else self.CYAN
+        right_detected = hand_info['right_hand']['position'] is not None
+        
+        if right_detected:
+            right_text = self.font_small.render(f"RIGHT: {right_status}", True, right_color)
+        else:
+            right_text = self.font_small.render("RIGHT: ---", True, (100, 100, 100))
+        self.screen.blit(right_text, (20, hand_status_y + 55))
+
+        # Draw instructions (bottom center)
+        inst_text = self.font_tiny.render(
+            "PUNCH targets with FIST ✊ | DODGE obstacles (red) | GRAB powerups (yellow)",
             True, self.WHITE
         )
-        self.screen.blit(inst_text, (20, self.screen_height - 30))
+        self.screen.blit(inst_text, (self.screen_width // 2 - inst_text.get_width() // 2, self.screen_height - 30))
 
         # Game over screen
         if score_manager.game_over:
