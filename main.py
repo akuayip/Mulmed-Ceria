@@ -168,8 +168,25 @@ def main():
                 click_timer = 0.0
 
         elif current_state == GAME_PLAY:
-            game_engine.update(dt, landmarks)
-            game_engine.draw(landmarks)
+            # Detect hands and get fist status
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            hand_info = pose_detector.get_hand_info(
+                frame_rgb,
+                SCREEN_W,
+                SCREEN_H
+            )
+            
+            game_engine.update(dt, landmarks, hand_info)
+            
+            # Draw game elements
+            game_renderer.draw_game_objects(game_engine.targets, game_engine.obstacles, game_engine.powerups)
+            
+            if landmarks:
+                game_renderer.draw_stickman(landmarks, pose_detector)
+            
+            game_renderer.draw_hand_indicators(hand_info)
+            game_renderer.draw_ui(game_engine.score_manager, clock, hand_info)
+            
             if game_engine.score_manager.game_over:
                 current_state = GAME_OVER
                 game_engine.sound_manager.stop_music()
@@ -197,8 +214,18 @@ def main():
                 click_timer = 0.0
 
         elif current_state == GAME_OVER:
-            game_engine.draw(landmarks)
-            game_renderer.draw_ui(game_engine.score_manager, clock)
+            # Draw game elements with game over overlay
+            game_renderer.draw_game_objects(game_engine.targets, game_engine.obstacles, game_engine.powerups)
+            
+            if landmarks:
+                game_renderer.draw_stickman(landmarks, pose_detector)
+            
+            # hand_info untuk game over screen (kosong jika tidak ada)
+            empty_hand_info = {
+                'left_hand': {'position': None, 'is_fist': False},
+                'right_hand': {'position': None, 'is_fist': False}
+            }
+            game_renderer.draw_ui(game_engine.score_manager, clock, empty_hand_info)
 
         # Cursor Rendering (Hidden During Gameplay)
         if current_state != GAME_PLAY:

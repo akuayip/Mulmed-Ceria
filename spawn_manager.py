@@ -20,10 +20,6 @@ class SpawnManager:
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-    def update_screen_size(self, w, h):
-        self.screen_w = w
-        self.screen_h = h
-
         # Timers for spawning
         self.target_spawn_timer = 0
         self.target_spawn_interval = 3.0  # Spawn target every 3 seconds
@@ -31,6 +27,11 @@ class SpawnManager:
         self.obstacle_spawn_interval = 5.0  # Spawn obstacle every 5 seconds
         self.powerup_spawn_timer = 0
         self.powerup_spawn_interval = 15.0  # Spawn powerup every 15 seconds
+
+    def update_screen_size(self, w, h):
+        """Update screen dimensions when window is resized."""
+        self.screen_width = w
+        self.screen_height = h
 
     def update(self, dt, targets, obstacles, powerups):
         """

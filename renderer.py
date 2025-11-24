@@ -20,10 +20,6 @@ class GameRenderer:
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
-    
-    def update_screen_size(self, new_w, new_h):
-        self.screen_width = new_w
-        self.screen_height = new_h
         
         # Colors 
         self.BLACK = (0, 0, 0)
@@ -44,6 +40,11 @@ class GameRenderer:
         
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
+    
+    def update_screen_size(self, new_w, new_h):
+        """Update screen dimensions when resized."""
+        self.screen_width = new_w
+        self.screen_height = new_h
 
     def clear_screen(self):
         """Fills the screen with black."""

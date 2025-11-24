@@ -232,9 +232,8 @@ class GameEngine:
                 
                 if distance <= collision_threshold:
                     obstacle.active = False
-                    if self.score_manager.lose_life():
+                    if self.score_manager.lose_life(self.sound_manager):
                         self.score_manager.subtract_score(obstacle.damage)
-                        self.sound_manager.play_sound('damage')
 
 
     def run(self):
