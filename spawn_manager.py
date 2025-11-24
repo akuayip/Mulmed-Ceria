@@ -20,6 +20,10 @@ class SpawnManager:
         self.screen_width = screen_width
         self.screen_height = screen_height
 
+    def update_screen_size(self, w, h):
+        self.screen_w = w
+        self.screen_h = h
+
         # Timers for spawning
         self.target_spawn_timer = 0
         self.target_spawn_interval = 3.0  # Spawn target every 3 seconds

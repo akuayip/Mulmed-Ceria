@@ -1,67 +1,47 @@
-"""
-Game Engine Module
-Main game loop and logic for Cam-Fu.
-"""
-
 import pygame
 import cv2
 import numpy as np
 import random
+import mediapipe as mp
+
+# Import modul eksternal
 from pose_detector import PoseDetector
 from collision_detector import CollisionDetector
 from game_objects import Target, Obstacle, PowerUp
 from score_manager import ScoreManager
 from sound_manager import SoundManager
-import mediapipe as mp
-
-# Impor kelas baru kita
 from renderer import GameRenderer
 from spawn_manager import SpawnManager
 
 
 class GameEngine:
     """
-    Main game engine that handles game loop, rendering, and logic.
+    Menangani logika inti game, update objek, dan deteksi tabrakan.
+    Loop utama ditangani oleh main.py.
     """
 
-    def __init__(self, screen_width=1280, screen_height=720, camera_id=0):
-        """
-        Initialize Game Engine.
-        """
-        # Initialize Pygame
-        pygame.init()
+    def __init__(self, screen, pose_detector, game_renderer, spawn_manager):
+        self.screen = screen
+        self.screen_width = screen.get_width()
+        self.screen_height = screen.get_height()
+
+        # Komponen eksternal
+        self.pose_detector = pose_detector
+        self.renderer = game_renderer
+        self.spawn_manager = spawn_manager
         
-        # Screen setup
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.screen = pygame.display.set_mode((screen_width, screen_height))
-        pygame.display.set_caption("Cam-Fu - Pose Fighting Game")
-        
-        # Game components 
-        self.camera_id = camera_id
-        self.cap = None
-        self.pose_detector = None
+        # Komponen internal
         self.collision_detector = CollisionDetector(collision_radius=25)
         self.score_manager = ScoreManager(starting_lives=3)
         self.sound_manager = SoundManager()
-        
-        # Inisialisasi manajer baru
-        self.renderer = GameRenderer(self.screen)
-        self.spawn_manager = SpawnManager(self.screen_width, self.screen_height)
-        
-        # Game objects
+
+        # List objek game
         self.targets = []
         self.obstacles = []
         self.powerups = []
         
-        # Game state
-        self.running = True
+        # State
         self.paused = False
-        self.show_camera = True 
-        self.clock = pygame.time.Clock()
-        self.fps = 60
-        
-        # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
         
         # Hand tracking state
@@ -110,12 +90,13 @@ class GameEngine:
                     self.show_camera = not self.show_camera
 
     def reset_game(self):
-        """Reset game state."""
+        """Reset seluruh state permainan."""
+        print("Mereset game...")
         self.score_manager.reset()
         self.targets.clear()
         self.obstacles.clear()
         self.powerups.clear()
-        self.spawn_manager.reset_timers() 
+        self.spawn_manager.reset_timers()
 
     def update(self, dt: float, landmarks, hand_info):
         """
@@ -136,29 +117,23 @@ class GameEngine:
         if self.score_manager.slow_motion_active:
             dt *= 0.5
 
-        # Update score manager
+        # Update timer powerup + spawn objek
         self.score_manager.update(dt)
-
-        # Update spawn timers and spawn objects 
         self.spawn_manager.update(dt, self.targets, self.obstacles, self.powerups)
 
-        # Update all game objects
-        for target in self.targets[:]:
-            target.update(dt)
+        # Update semua objek
+        for obj in self.targets: obj.update(dt)
+        for obj in self.obstacles: obj.update(dt)
+        for obj in self.powerups[:]:
+            obj.update(dt)
+            if not obj.active:
+                self.powerups.remove(obj)
 
-        for obstacle in self.obstacles[:]:
-            obstacle.update(dt)
-
-        for powerup in self.powerups[:]:
-            powerup.update(dt)
-            if not powerup.active:
-                self.powerups.remove(powerup)
-
-        # Check collisions if pose detected
+        # Deteksi tabrakan jika pose terdeteksi
         if landmarks:
             self.check_collisions(landmarks, hand_info)
 
-        # Remove inactive objects
+        # Bersihkan objek tak aktif
         self.targets = [t for t in self.targets if t.active]
         self.obstacles = [o for o in self.obstacles if o.active]
 
@@ -191,7 +166,7 @@ class GameEngine:
             
             if collision_hand:  # Returns 'left', 'right', or ''
                 target.active = False
-                self.score_manager.add_score(target.points)
+                self.score_manager.add_score(target.points, self.sound_manager)
                 self.score_manager.targets_hit += 1
                 self.sound_manager.play_sound('hit')
 
@@ -317,14 +292,10 @@ class GameEngine:
             # 6. Update display
             pygame.display.flip()
 
-        # Cleanup
-        self.cleanup()
-
+    # CLEANUP
     def cleanup(self):
-        """Clean up resources."""
-        print("\nCleaning up...")
-        if self.cap:
-            self.cap.release()
+        """Bersihkan resource."""
+        print("Membersihkan GameEngine...")
         if self.pose_detector:
             self.pose_detector.close()
         self.sound_manager.cleanup()
