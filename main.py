@@ -22,10 +22,93 @@ GAME_GUIDE = 5
 pygame.init()
 pygame.font.init()
 
+def get_available_cameras():
+    """Deteksi kamera yang tersedia di sistem."""
+    available_cameras = []
+    
+    # Coba setiap kamera dari 0 hingga 10 (umumnya cukup untuk mengecek)
+    for i in range(10):
+        try:
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                # Test read capability
+                ret, frame = cap.read()
+                if ret:
+                    available_cameras.append(i)
+            cap.release()
+        except Exception as e:
+            continue
+    
+    return available_cameras
+
 def is_same_position(pos1, pos2, threshold=80):
     if pos1 is None or pos2 is None:
         return False
     return abs(pos1[0] - pos2[0]) < threshold and abs(pos1[1] - pos2[1]) < threshold
+
+def select_camera_terminal(available_cameras):
+    """Menu pemilihan kamera via terminal."""
+    print("\n" + "="*60)
+    print("        PILIH KAMERA - CAM-FU")
+    print("="*60)
+    
+    if not available_cameras:
+        print("Error: Tidak ada kamera yang ditemukan!")
+        return None
+    
+    print(f"\nKamera yang tersedia ({len(available_cameras)} kamera):")
+    print("-" * 40)
+    
+    for i, cam_idx in enumerate(available_cameras, 1):
+        print(f"{i}. Kamera {cam_idx}")
+    
+    print("\nKetik nomor kamera yang ingin digunakan (1-{}):".format(len(available_cameras)))
+    print("Atau ketik 'q' untuk keluar")
+    
+    while True:
+        try:
+            choice = input("\nPilihan Anda: ").strip().lower()
+            
+            if choice == 'q':
+                print("Pembatalan pemilihan kamera. Keluar dari aplikasi.")
+                sys.exit(0)
+            
+            # Validasi input
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(available_cameras):
+                    selected_camera = available_cameras[choice_idx]
+                    print(f"\n✓ Kamera {selected_camera} telah dipilih!")
+                    return selected_camera
+                else:
+                    print(f"❌ Nomor tidak valid. Pilih antara 1-{len(available_cameras)} atau 'q' untuk keluar")
+            except ValueError:
+                print("❌ Input tidak valid. Masukkan nomor atau 'q' untuk keluar")
+                
+        except KeyboardInterrupt:
+            print("\n\nPembatalan pemilihan kamera. Keluar dari aplikasi.")
+            sys.exit(0)
+        except Exception as e:
+            print(f"❌ Error: {e}. Coba lagi.")
+
+def select_camera_terminal_demo(available_cameras):
+    """Demo terminal camera selection - untuk testing tanpa input interaktif."""
+    print("\n" + "="*60)
+    print("        DEMO PILIH KAMERA TERMINAL - CAM-FU")
+    print("="*60)
+    
+    if not available_cameras:
+        print("Error: Tidak ada kamera yang ditemukan!")
+        return None
+    
+    print(f"\nKamera yang tersedia ({len(available_cameras)} kamera):")
+    print("-" * 40)
+    
+    for i, cam_idx in enumerate(available_cameras, 1):
+        print(f"{i}. Kamera {cam_idx}")
+    
+    print(f"\n✓ Auto-pilih kamera {available_cameras[0]} (demo mode)")
+    return available_cameras[0]
 
 def stable_hover(current_pos, prev_pos, threshold=80):
     if current_pos is None:
@@ -40,6 +123,39 @@ def main():
     screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.RESIZABLE)
     pygame.display.set_caption("Cam-Fu - Pose Fighting Game")
     clock = pygame.time.Clock()
+
+    # Deteksi dan pilih kamera terlebih dahulu via terminal
+    print("="*60)
+    print("        CAM-FU - POSE FIGHTING GAME")
+    print("="*60)
+    print("\nMencari kamera yang tersedia...")
+    
+    available_cameras = get_available_cameras()
+    
+    if not available_cameras:
+        print("Error: Tidak ada kamera yang ditemukan.")
+        print("Pastikan kamera web telah terhubung dan tidak digunakan oleh aplikasi lain.")
+        sys.exit()
+    
+    print(f"\n✓ Berhasil menemukan {len(available_cameras)} kamera: {available_cameras}")
+    
+    # Pilih kamera via terminal
+    if len(available_cameras) == 1:
+        selected_camera = available_cameras[0]
+        print(f"\n✓ Menggunakan kamera {selected_camera} (hanya satu kamera tersedia)")
+    else:
+        print(f"\nSilakan pilih kamera yang akan digunakan:")
+        selected_camera = select_camera_terminal(available_cameras)
+        
+        if selected_camera is None:
+            print("Gagal memilih kamera. Keluar dari aplikasi.")
+            sys.exit()
+
+    # Initialize camera with selected device
+    cap = cv2.VideoCapture(selected_camera)
+    if not cap.isOpened():
+        print(f"Error: Tidak dapat membuka kamera {selected_camera}.")
+        sys.exit()
 
     # Core modules
     pose_detector = PoseDetector()
@@ -60,12 +176,6 @@ def main():
     
     # Connect sound manager to menu
     menu.sound_manager = sound_manager
-
-    # Camera
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("Error: Kamera tidak ditemukan.")
-        sys.exit()
 
     # Input states
     current_state = GAME_MENU
@@ -211,6 +321,7 @@ def main():
                     elif hovered == "credits":
                         current_state = GAME_CREDITS
                     elif hovered == "guide":
+                        current_state = GAME_GUIDE
                         current_state = GAME_GUIDE
                     click_timer = 0.0
             else:
