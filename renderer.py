@@ -5,21 +5,24 @@ Handles all drawing operations for the Cam-Fu game.
 
 import pygame
 import mediapipe as mp
+import os
 
 class GameRenderer:
     """
     Handles all rendering tasks, including UI, stickman, hands, and objects.
     """
 
-    def __init__(self, screen):
+    def __init__(self, screen, assets_dir='assets/images'):
         """
         Initialize the renderer.
         Args:
             screen: The main pygame.Surface to draw on.
+            assets_dir: Directory containing image assets
         """
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
+        self.assets_dir = assets_dir
         
         # Colors 
         self.BLACK = (0, 0, 0)
@@ -38,6 +41,24 @@ class GameRenderer:
         self.font_small = pygame.font.Font(None, 24)
         self.font_tiny = pygame.font.Font(None, 20)
         
+        # Load blood image for lives
+        self.blood_image = None
+        blood_path = os.path.join(self.assets_dir, 'blood.png')
+        if os.path.exists(blood_path):
+            self.blood_image = pygame.image.load(blood_path).convert_alpha()
+            self.blood_image = pygame.transform.smoothscale(self.blood_image, (50, 50))
+        else:
+            print(f"[Warning] Blood image not found: {blood_path}")
+        
+        # Load gameplay background
+        self.play_bg = None
+        play_bg_path = os.path.join(self.assets_dir, 'main_page.png') # nanti di ubah
+        if os.path.exists(play_bg_path):
+            self.play_bg = pygame.image.load(play_bg_path).convert()
+            self.play_bg = pygame.transform.scale(self.play_bg, (self.screen_width, self.screen_height))
+        else:
+            print(f"[Warning] Gameplay background not found: {play_bg_path}")
+        
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
     
@@ -45,10 +66,20 @@ class GameRenderer:
         """Update screen dimensions when resized."""
         self.screen_width = new_w
         self.screen_height = new_h
+        
+        # Rescale background if exists
+        if self.play_bg:
+            play_bg_path = os.path.join(self.assets_dir, 'play_bg.png')
+            if os.path.exists(play_bg_path):
+                self.play_bg = pygame.image.load(play_bg_path).convert()
+                self.play_bg = pygame.transform.scale(self.play_bg, (new_w, new_h))
 
     def clear_screen(self):
-        """Fills the screen with black."""
-        self.screen.fill(self.BLACK)
+        """Fills the screen with background or black."""
+        if self.play_bg:
+            self.screen.blit(self.play_bg, (0, 0))
+        else:
+            self.screen.fill(self.BLACK)
 
     def draw_game_objects(self, targets, obstacles, powerups):
         """Draw all active game objects."""
@@ -111,21 +142,36 @@ class GameRenderer:
             clock: Pygame clock
             hand_info: Hand tracking information
         """
-        # Draw FPS (top right corner)
+        # === BLOOD/LIVES (TOP LEFT CORNER) ===
+        blood_size = 50  # Ukuran blood (50x50 px)
+        blood_spacing = 10  # Jarak antar blood
+        blood_start_x = 20  # 20px dari kiri
+        blood_start_y = 20  # 20px dari atas
+        
+        for i in range(score_manager.lives):
+            x = blood_start_x + i * (blood_size + blood_spacing)
+            y = blood_start_y
+            
+            if self.blood_image:
+                self.screen.blit(self.blood_image, (x, y))
+            else:
+                # Fallback: red circles if image not found
+                pygame.draw.circle(self.screen, self.RED, (x + blood_size//2, y + blood_size//2), blood_size//2)
+        
+        # === SCORE (TOP RIGHT CORNER) ===
+        score_text = self.font_medium.render(f"SCORE: {score_manager.score}", True, self.WHITE)
+        score_x = self.screen_width - score_text.get_width() - 20
+        self.screen.blit(score_text, (score_x, 20))
+        
+        # === FPS (BOTTOM RIGHT CORNER) ===
         fps = int(clock.get_fps())
         fps_text = self.font_small.render(f"FPS: {fps}", True, self.GREEN)
-        self.screen.blit(fps_text, (self.screen_width - 100, 20))
-        
-        # Draw score
-        score_text = self.font_medium.render(f"SCORE: {score_manager.score}", True, self.WHITE)
-        self.screen.blit(score_text, (20, 20))
+        fps_x = self.screen_width - fps_text.get_width() - 20
+        fps_y = self.screen_height - fps_text.get_height() - 20
+        self.screen.blit(fps_text, (fps_x, fps_y))
 
-        # Draw lives (hearts)
-        for i in range(score_manager.lives):
-            pygame.draw.circle(self.screen, self.RED, (20 + i * 40, 70), 15)
-
-        # Draw active power-ups
-        y_offset = 110
+        # === ACTIVE POWER-UPS (BELOW BLOOD - TOP LEFT) ===
+        y_offset = blood_start_y + blood_size + 15  # Start below blood icons
         if score_manager.shield_active:
             shield_text = self.font_small.render(
                 f"SHIELD: {int(score_manager.shield_duration)}s", True, self.BLUE
@@ -147,15 +193,15 @@ class GameRenderer:
             self.screen.blit(slow_text, (20, y_offset))
             y_offset += 30
 
-        # Draw hand status indicators (bottom left)
-        hand_status_y = self.screen_height - 100
+        # === HAND STATUS (BOTTOM LEFT CORNER) ===
+        hand_status_y = self.screen_height - 90  # Adjusted for corner positioning
         
         # Title
         status_title = self.font_small.render("HAND STATUS:", True, self.WHITE)
         self.screen.blit(status_title, (20, hand_status_y))
         
         # Left hand status
-        left_status = "✊ FIST" if hand_info['left_hand']['is_fist'] else "✋ OPEN"
+        left_status = " FIST" if hand_info['left_hand']['is_fist'] else " OPEN"
         left_color = self.RED if hand_info['left_hand']['is_fist'] else self.CYAN
         left_detected = hand_info['left_hand']['position'] is not None
         
@@ -166,7 +212,7 @@ class GameRenderer:
         self.screen.blit(left_text, (20, hand_status_y + 30))
         
         # Right hand status
-        right_status = "✊ FIST" if hand_info['right_hand']['is_fist'] else "✋ OPEN"
+        right_status = " FIST" if hand_info['right_hand']['is_fist'] else " OPEN"
         right_color = self.RED if hand_info['right_hand']['is_fist'] else self.CYAN
         right_detected = hand_info['right_hand']['position'] is not None
         
@@ -176,14 +222,16 @@ class GameRenderer:
             right_text = self.font_small.render("RIGHT: ---", True, (100, 100, 100))
         self.screen.blit(right_text, (20, hand_status_y + 55))
 
-        # Draw instructions (bottom center)
+        # === INSTRUCTIONS (BOTTOM CENTER) ===
         inst_text = self.font_tiny.render(
-            "PUNCH targets with FIST ✊ | DODGE obstacles (red) | GRAB powerups (yellow)",
+            "PUNCH targets with FIST  | DODGE obstacles (red) | GRAB powerups (yellow)",
             True, self.WHITE
         )
-        self.screen.blit(inst_text, (self.screen_width // 2 - inst_text.get_width() // 2, self.screen_height - 30))
+        inst_x = self.screen_width // 2 - inst_text.get_width() // 2
+        inst_y = self.screen_height - 25
+        self.screen.blit(inst_text, (inst_x, inst_y))
 
-        # Game over screen
+        # === GAME OVER SCREEN (CENTER) ===
         if score_manager.game_over:
             overlay = pygame.Surface((self.screen_width, self.screen_height))
             overlay.set_alpha(200)

@@ -8,6 +8,7 @@ from pose_detector import PoseDetector
 from renderer import GameRenderer
 from spawn_manager import SpawnManager
 from menu_manager import MenuManager
+from sound_manager import SoundManager
 
 # Game States
 GAME_MENU = 0
@@ -40,7 +41,7 @@ def main():
 
     # Core modules
     pose_detector = PoseDetector()
-    game_renderer = GameRenderer(screen)
+    game_renderer = GameRenderer(screen, assets_dir='assets/images')
     spawn_manager = SpawnManager(SCREEN_W, SCREEN_H)
     
     game_engine = GameEngine(
@@ -51,6 +52,12 @@ def main():
     )
 
     menu = MenuManager(screen, 'assets/images')
+    
+    # Sound manager
+    sound_manager = SoundManager()
+    
+    # Connect sound manager to menu
+    menu.sound_manager = sound_manager
 
     # Camera
     cap = cv2.VideoCapture(0)
@@ -60,6 +67,9 @@ def main():
 
     # Input states
     current_state = GAME_MENU
+    
+    # Start menu music
+    sound_manager.play_music('menu', loops=-1, fade_ms=1000)
     prev_hand = None
     click_timer = 0.0
     CLICK_HOLD = 0.8
@@ -81,11 +91,25 @@ def main():
                 if e.key == pygame.K_q:
                     running = False
                 if e.key == pygame.K_m:
-                    current_state = GAME_MENU
-                    game_engine.sound_manager.stop_music()
+                    sound_manager.toggle_music()
+                if e.key == pygame.K_s:
+                    sound_manager.toggle_sound()
+                if e.key == pygame.K_PLUS or e.key == pygame.K_EQUALS:
+                    new_vol = sound_manager.music_volume + 0.1
+                    sound_manager.set_music_volume(new_vol)
+                if e.key == pygame.K_MINUS:
+                    new_vol = sound_manager.music_volume - 0.1
+                    sound_manager.set_music_volume(new_vol)
+                if e.key == pygame.K_ESCAPE:
+                    if current_state in (GAME_CREDITS, GAME_GUIDE):
+                        current_state = GAME_MENU
+                    else:
+                        current_state = GAME_MENU
+                        sound_manager.crossfade_music('menu', fade_out_ms=500, fade_in_ms=500)
                 if current_state == GAME_OVER and e.key == pygame.K_r:
                     current_state = GAME_PLAY
                     game_engine.reset_game()
+                    sound_manager.crossfade_music('gameplay', fade_out_ms=300, fade_in_ms=500)
 
         # Read Camera
         ret, frame = cap.read()
@@ -141,7 +165,8 @@ def main():
 
         # Background Rendering
         if current_state == GAME_PLAY:
-            screen.fill((0, 0, 0))   # Black background for gameplay
+            # Use renderer's clear_screen which draws play_bg.png
+            game_renderer.clear_screen()
         else:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_py = pygame.image.frombuffer(frame_rgb.tobytes(), frame.shape[1::-1], "RGB")
@@ -150,15 +175,21 @@ def main():
 
         # Game State Machine
         if current_state == GAME_MENU:
+            # Ensure menu music is playing
+            if sound_manager.current_music != 'menu':
+                sound_manager.crossfade_music('menu', fade_out_ms=500, fade_in_ms=500)
+            
             menu.draw_menu()
             hovered = menu.check_button_hover(active_hand_pos)
 
             if hovered and stable_hover(active_hand_pos, prev_hand, 100):
                 click_timer += dt
                 if click_timer >= CLICK_HOLD:
+                    menu.play_button_sound()
                     if hovered == "start":
                         current_state = GAME_PLAY
                         game_engine.reset_game()
+                        sound_manager.crossfade_music('gameplay', fade_out_ms=500, fade_in_ms=1000)
                     elif hovered == "credits":
                         current_state = GAME_CREDITS
                     elif hovered == "guide":
@@ -178,6 +209,8 @@ def main():
             
             game_engine.update(dt, landmarks, hand_info)
             
+            # Background already drawn above in "Background Rendering" section
+            
             # Draw game elements
             game_renderer.draw_game_objects(game_engine.targets, game_engine.obstacles, game_engine.powerups)
             
@@ -189,7 +222,6 @@ def main():
             
             if game_engine.score_manager.game_over:
                 current_state = GAME_OVER
-                game_engine.sound_manager.stop_music()
 
         elif current_state == GAME_CREDITS:
             menu.draw_credits_screen()
@@ -197,6 +229,7 @@ def main():
             if hovered == "back" and stable_hover(active_hand_pos, prev_hand, 100):
                 click_timer += dt
                 if click_timer >= CLICK_HOLD:
+                    menu.play_button_sound()
                     current_state = GAME_MENU
                     click_timer = 0.0
             else:
@@ -208,6 +241,7 @@ def main():
             if hovered == "back" and stable_hover(active_hand_pos, prev_hand, 100):
                 click_timer += dt
                 if click_timer >= CLICK_HOLD:
+                    menu.play_button_sound()
                     current_state = GAME_MENU
                     click_timer = 0.0
             else:
@@ -247,6 +281,7 @@ def main():
         prev_hand = active_hand_pos
 
     cap.release()
+    sound_manager.cleanup()
     game_engine.cleanup()
     sys.exit()
 
