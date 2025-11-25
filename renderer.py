@@ -5,21 +5,24 @@ Handles all drawing operations for the Cam-Fu game.
 
 import pygame
 import mediapipe as mp
+import os
 
 class GameRenderer:
     """
     Handles all rendering tasks, including UI, stickman, hands, and objects.
     """
 
-    def __init__(self, screen):
+    def __init__(self, screen, assets_dir='assets/images'):
         """
         Initialize the renderer.
         Args:
             screen: The main pygame.Surface to draw on.
+            assets_dir: Directory containing image assets
         """
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
+        self.assets_dir = assets_dir
         
         # Colors 
         self.BLACK = (0, 0, 0)
@@ -38,17 +41,81 @@ class GameRenderer:
         self.font_small = pygame.font.Font(None, 24)
         self.font_tiny = pygame.font.Font(None, 20)
         
+        # Load blood image for lives
+        self.blood_image = None
+        blood_path = os.path.join(self.assets_dir, 'blood.png')
+        if os.path.exists(blood_path):
+            self.blood_image = pygame.image.load(blood_path).convert_alpha()
+            self.blood_image = pygame.transform.smoothscale(self.blood_image, (50, 50))
+        else:
+            print(f"[Warning] Blood image not found: {blood_path}")
+        
+        # Load gameplay background
+        self.play_bg = None
+        play_bg_path = os.path.join(self.assets_dir, 'main_page.png')
+        if os.path.exists(play_bg_path):
+            self.play_bg = pygame.image.load(play_bg_path).convert()
+            self.play_bg = pygame.transform.scale(self.play_bg, (self.screen_width, self.screen_height))
+        else:
+            print(f"[Warning] Gameplay background not found: {play_bg_path}")
+        
+        # --- ASET GAME OVER ---
+        # 1. Gambar Game Over
+        self.game_over_image = None
+        game_over_path = os.path.join(self.assets_dir, 'game_over.png')
+        if os.path.exists(game_over_path):
+            self.game_over_image = pygame.image.load(game_over_path).convert_alpha()
+        else:
+            print(f"[Warning] Game over image not found: {game_over_path}")
+        
+        # 2. Background Landing Page
+        self.landing_page_bg = None
+        landing_path = os.path.join(self.assets_dir, 'landing_page.png')
+        if os.path.exists(landing_path):
+            self.landing_page_bg = pygame.image.load(landing_path).convert()
+            self.landing_page_bg = pygame.transform.scale(self.landing_page_bg, (self.screen_width, self.screen_height))
+        else:
+            print(f"[Warning] Landing page background not found: {landing_path}")
+        
+        # 3. Tombol Menu
+        self.menu_button = None
+        menu_path = os.path.join(self.assets_dir, 'menu.png')
+        if os.path.exists(menu_path):
+            self.menu_button = pygame.image.load(menu_path).convert_alpha()
+            self.menu_button = pygame.transform.smoothscale(self.menu_button, (80, 80))
+        else:
+            print(f"[Warning] Menu button not found: {menu_path}")
+        
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
-    
+        
+        self.game_over_played = False
+
     def update_screen_size(self, new_w, new_h):
         """Update screen dimensions when resized."""
         self.screen_width = new_w
         self.screen_height = new_h
+        
+        # Rescale background if exists
+        if self.play_bg:
+            play_bg_path = os.path.join(self.assets_dir, 'play_bg.png')
+            if os.path.exists(play_bg_path):
+                self.play_bg = pygame.image.load(play_bg_path).convert()
+                self.play_bg = pygame.transform.scale(self.play_bg, (new_w, new_h))
+        
+        # Rescale landing page if exists
+        if self.landing_page_bg:
+            landing_path = os.path.join(self.assets_dir, 'landing_page.png')
+            if os.path.exists(landing_path):
+                self.landing_page_bg = pygame.image.load(landing_path).convert()
+                self.landing_page_bg = pygame.transform.scale(self.landing_page_bg, (new_w, new_h))
 
     def clear_screen(self):
-        """Fills the screen with black."""
-        self.screen.fill(self.BLACK)
+        """Fills the screen with background or black."""
+        if self.play_bg:
+            self.screen.blit(self.play_bg, (0, 0))
+        else:
+            self.screen.fill(self.BLACK)
 
     def draw_game_objects(self, targets, obstacles, powerups):
         """Draw all active game objects."""
@@ -64,7 +131,6 @@ class GameRenderer:
     def draw_hand_indicators(self, hand_info):
         """
         Draw visual indicators for hands and fist status.
-        
         Args:
             hand_info: Dictionary containing left_hand and right_hand info
         """
@@ -105,27 +171,37 @@ class GameRenderer:
     def draw_ui(self, score_manager, clock, hand_info):
         """
         Draw UI elements (score, lives, hand status, etc.).
-        
-        Args:
-            score_manager: ScoreManager instance
-            clock: Pygame clock
-            hand_info: Hand tracking information
         """
-        # Draw FPS (top right corner)
+        # === BLOOD/LIVES (TOP LEFT CORNER) ===
+        blood_size = 50  # Ukuran blood (50x50 px)
+        blood_spacing = 10  # Jarak antar blood
+        blood_start_x = 20  # 20px dari kiri
+        blood_start_y = 20  # 20px dari atas
+        
+        for i in range(score_manager.lives):
+            x = blood_start_x + i * (blood_size + blood_spacing)
+            y = blood_start_y
+            
+            if self.blood_image:
+                self.screen.blit(self.blood_image, (x, y))
+            else:
+                # Fallback: red circles if image not found
+                pygame.draw.circle(self.screen, self.RED, (x + blood_size//2, y + blood_size//2), blood_size//2)
+        
+        # === SCORE (TOP RIGHT CORNER) ===
+        score_text = self.font_medium.render(f"SCORE: {score_manager.score}", True, self.WHITE)
+        score_x = self.screen_width - score_text.get_width() - 20
+        self.screen.blit(score_text, (score_x, 20))
+        
+        # === FPS (BOTTOM RIGHT CORNER) ===
         fps = int(clock.get_fps())
         fps_text = self.font_small.render(f"FPS: {fps}", True, self.GREEN)
-        self.screen.blit(fps_text, (self.screen_width - 100, 20))
-        
-        # Draw score
-        score_text = self.font_medium.render(f"SCORE: {score_manager.score}", True, self.WHITE)
-        self.screen.blit(score_text, (20, 20))
+        fps_x = self.screen_width - fps_text.get_width() - 20
+        fps_y = self.screen_height - fps_text.get_height() - 20
+        self.screen.blit(fps_text, (fps_x, fps_y))
 
-        # Draw lives (hearts)
-        for i in range(score_manager.lives):
-            pygame.draw.circle(self.screen, self.RED, (20 + i * 40, 70), 15)
-
-        # Draw active power-ups
-        y_offset = 110
+        # === ACTIVE POWER-UPS (BELOW BLOOD - TOP LEFT) ===
+        y_offset = blood_start_y + blood_size + 15  # Start below blood icons
         if score_manager.shield_active:
             shield_text = self.font_small.render(
                 f"SHIELD: {int(score_manager.shield_duration)}s", True, self.BLUE
@@ -147,15 +223,15 @@ class GameRenderer:
             self.screen.blit(slow_text, (20, y_offset))
             y_offset += 30
 
-        # Draw hand status indicators (bottom left)
-        hand_status_y = self.screen_height - 100
+        # === HAND STATUS (BOTTOM LEFT CORNER) ===
+        hand_status_y = self.screen_height - 90  # Adjusted for corner positioning
         
         # Title
         status_title = self.font_small.render("HAND STATUS:", True, self.WHITE)
         self.screen.blit(status_title, (20, hand_status_y))
         
         # Left hand status
-        left_status = "✊ FIST" if hand_info['left_hand']['is_fist'] else "✋ OPEN"
+        left_status = " FIST" if hand_info['left_hand']['is_fist'] else " OPEN"
         left_color = self.RED if hand_info['left_hand']['is_fist'] else self.CYAN
         left_detected = hand_info['left_hand']['position'] is not None
         
@@ -166,7 +242,7 @@ class GameRenderer:
         self.screen.blit(left_text, (20, hand_status_y + 30))
         
         # Right hand status
-        right_status = "✊ FIST" if hand_info['right_hand']['is_fist'] else "✋ OPEN"
+        right_status = " FIST" if hand_info['right_hand']['is_fist'] else " OPEN"
         right_color = self.RED if hand_info['right_hand']['is_fist'] else self.CYAN
         right_detected = hand_info['right_hand']['position'] is not None
         
@@ -176,48 +252,77 @@ class GameRenderer:
             right_text = self.font_small.render("RIGHT: ---", True, (100, 100, 100))
         self.screen.blit(right_text, (20, hand_status_y + 55))
 
-        # Draw instructions (bottom center)
+        # === INSTRUCTIONS (BOTTOM CENTER) ===
         inst_text = self.font_tiny.render(
-            "PUNCH targets with FIST ✊ | DODGE obstacles (red) | GRAB powerups (yellow)",
+            "PUNCH targets with FIST  | DODGE obstacles (red) | GRAB powerups (yellow)",
             True, self.WHITE
         )
-        self.screen.blit(inst_text, (self.screen_width // 2 - inst_text.get_width() // 2, self.screen_height - 30))
+        inst_x = self.screen_width // 2 - inst_text.get_width() // 2
+        inst_y = self.screen_height - 25
+        self.screen.blit(inst_text, (inst_x, inst_y))
 
-        # Game over screen
-        if score_manager.game_over:
+    def draw_game_over_screen(self, score_manager, play_duration=0, phase=1):
+        """
+        Draws the Game Over screen with sequential animation.
+        Phase 1: Black Screen + Game Over Logo (Intro)
+        Phase 2: Landing BG + Score + Time + Menu Button
+        """
+        center_x = self.screen_width // 2
+        center_y = self.screen_height // 2
+
+        if phase == 1:
+            # === FASE 1: LAYAR HITAM + LOGO GAME OVER ===
             overlay = pygame.Surface((self.screen_width, self.screen_height))
-            overlay.set_alpha(200)
+            overlay.set_alpha(150) 
             overlay.fill(self.BLACK)
             self.screen.blit(overlay, (0, 0))
 
-            game_over_text = self.font_large.render("GAME OVER", True, self.RED)
-            final_score_text = self.font_medium.render(
-                f"Final Score: {score_manager.score}", True, self.WHITE
-            )
-            restart_text = self.font_small.render(
-                "Press R to Restart | ESC to Quit", True, self.WHITE
-            )
+            # Gambar Logo Game Over di tengah
+            if self.game_over_image:
+                img_width = int(self.screen_width * 0.5)
+                img_height = int(self.screen_height * 0.4)
+                scaled_img = pygame.transform.scale(self.game_over_image, (img_width, img_height))
+                img_x = (self.screen_width - img_width) // 2
+                img_y = (self.screen_height - img_height) // 2
+                self.screen.blit(scaled_img, (img_x, img_y))
+            else:
+                # Fallback teks jika gambar tidak ada
+                text = self.font_large.render("GAME OVER", True, self.RED)
+                text_rect = text.get_rect(center=(center_x, center_y))
+                self.screen.blit(text, text_rect)
 
-            self.screen.blit(
-                game_over_text,
-                (self.screen_width // 2 - game_over_text.get_width() // 2, 250)
-            )
-            self.screen.blit(
-                final_score_text,
-                (self.screen_width // 2 - final_score_text.get_width() // 2, 320)
-            )
-            self.screen.blit(
-                restart_text,
-                (self.screen_width // 2 - restart_text.get_width() // 2, 380)
-            )
+        elif phase == 2:
+            # === FASE 2: HASIL AKHIR (Background + Skor) ===
+            # 1. Background Landing Page
+            if self.landing_page_bg:
+                self.screen.blit(self.landing_page_bg, (0, 0))
+            else:
+                self.screen.fill(self.BLACK)
 
+            # 2. Hitung Waktu (Menit:Detik)
+            minutes = int(play_duration) // 60
+            seconds = int(play_duration) % 60
+            time_str = f"{minutes:02d}:{seconds:02d}"
+
+            # 3. Tampilkan Skor dan Waktu
+            score_text = self.font_medium.render(f"FINAL SCORE: {score_manager.score}", True, self.WHITE)
+            time_text = self.font_medium.render(f"TIME PLAYED: {time_str}", True, self.YELLOW)
+            
+            score_rect = score_text.get_rect(center=(center_x, center_y + 35))
+            time_rect = time_text.get_rect(center=(center_x, center_y + 75))
+            
+            self.screen.blit(score_text, score_rect)
+            self.screen.blit(time_text, time_rect)
+
+            # 5. Tombol Menu (Pojok Kiri Bawah)
+            if self.menu_button:
+                self.screen.blit(self.menu_button, (30, self.screen_height - 130))
+            
 
     def draw_stickman(self, landmarks, pose_detector):
         """
         Draw stickman overlay on game screen.
-        Args:
-            landmarks: Pose landmarks
-            pose_detector: The PoseDetector instance (to use its get_landmark_position)
+        (KEMBALI KE KODE ORIGINAL PANJANG)
         """
         if not landmarks:
             return
@@ -226,6 +331,7 @@ class GameRenderer:
         LINE_THICKNESS = 65       
         JOINT_RADIUS = LINE_THICKNESS // 2
 
+        # Get landmarks explicitly
         nose = pose_detector.get_landmark_position(landmarks, self.mp_pose.NOSE.value, self.screen_width, self.screen_height)
         left_ear = pose_detector.get_landmark_position(landmarks, self.mp_pose.LEFT_EAR.value, self.screen_width, self.screen_height)
         right_ear = pose_detector.get_landmark_position(landmarks, self.mp_pose.RIGHT_EAR.value, self.screen_width, self.screen_height)
@@ -245,7 +351,6 @@ class GameRenderer:
         right_knee = pose_detector.get_landmark_position(landmarks, self.mp_pose.RIGHT_KNEE.value, self.screen_width, self.screen_height)
         right_ankle = pose_detector.get_landmark_position(landmarks, self.mp_pose.RIGHT_ANKLE.value, self.screen_width, self.screen_height)
         
-
         neck_point = None
         pelvis_point = None
 
@@ -275,7 +380,6 @@ class GameRenderer:
             head_center_y_calc = nose[1] 
             head_center = (head_center_x_calc, head_center_y_calc)
             pygame.draw.circle(self.screen, BODY_COLOR, head_center, head_radius) 
-
 
         if neck_point and pelvis_point:
             pygame.draw.line(self.screen, BODY_COLOR, neck_point, pelvis_point, LINE_THICKNESS)
