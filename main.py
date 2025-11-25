@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 import cv2
 import mediapipe as mp
 
@@ -12,10 +13,11 @@ from sound_manager import SoundManager
 
 # Game States
 GAME_MENU = 0
-GAME_PLAY = 1
-GAME_OVER = 2
-GAME_CREDITS = 3
-GAME_GUIDE = 4
+GAME_COUNTDOWN = 1
+GAME_PLAY = 2
+GAME_OVER = 3
+GAME_CREDITS = 4
+GAME_GUIDE = 5
 
 pygame.init()
 pygame.font.init()
@@ -68,6 +70,20 @@ def main():
     # Input states
     current_state = GAME_MENU
     
+    # Countdown variables
+    countdown_timer = 3.0
+    countdown_images = {}
+    
+    # Load countdown images
+    for i in [1, 2, 3]:
+        img_path = f'assets/images/number_{i}.png'
+        if os.path.exists(img_path):
+            img = pygame.image.load(img_path).convert_alpha()
+            # Scale to appropriate size (200x200)
+            countdown_images[i] = pygame.transform.smoothscale(img, (200, 200))
+        else:
+            print(f"[Warning] Countdown image not found: {img_path}")
+    
     # Start menu music
     sound_manager.play_music('menu', loops=-1, fade_ms=1000)
     prev_hand = None
@@ -101,15 +117,15 @@ def main():
                     new_vol = sound_manager.music_volume - 0.1
                     sound_manager.set_music_volume(new_vol)
                 if e.key == pygame.K_ESCAPE:
-                    if current_state in (GAME_CREDITS, GAME_GUIDE):
-                        current_state = GAME_MENU
-                    else:
+                    if current_state in (GAME_CREDITS, GAME_GUIDE, GAME_COUNTDOWN, GAME_PLAY):
                         current_state = GAME_MENU
                         sound_manager.crossfade_music('menu', fade_out_ms=500, fade_in_ms=500)
                 if current_state == GAME_OVER and e.key == pygame.K_r:
-                    current_state = GAME_PLAY
+                    current_state = GAME_COUNTDOWN
+                    countdown_timer = 3.0
                     game_engine.reset_game()
-                    sound_manager.crossfade_music('gameplay', fade_out_ms=300, fade_in_ms=500)
+                    sound_manager.stop_music()
+                    sound_manager.play_sound('countdown')
 
         # Read Camera
         ret, frame = cap.read()
@@ -164,7 +180,7 @@ def main():
                 active_hand_pos = left_idx_pos
 
         # Background Rendering
-        if current_state == GAME_PLAY:
+        if current_state in (GAME_PLAY, GAME_COUNTDOWN):
             # Use renderer's clear_screen which draws play_bg.png
             game_renderer.clear_screen()
         else:
@@ -187,9 +203,11 @@ def main():
                 if click_timer >= CLICK_HOLD:
                     menu.play_button_sound()
                     if hovered == "start":
-                        current_state = GAME_PLAY
+                        current_state = GAME_COUNTDOWN
+                        countdown_timer = 3.0
                         game_engine.reset_game()
-                        sound_manager.crossfade_music('gameplay', fade_out_ms=500, fade_in_ms=1000)
+                        sound_manager.stop_music()
+                        sound_manager.play_sound('countdown')
                     elif hovered == "credits":
                         current_state = GAME_CREDITS
                     elif hovered == "guide":
@@ -197,6 +215,44 @@ def main():
                     click_timer = 0.0
             else:
                 click_timer = 0.0
+
+        elif current_state == GAME_COUNTDOWN:
+            # Draw black background or play_bg
+            game_renderer.clear_screen()
+            
+            # Add dark overlay
+            dark_overlay = pygame.Surface((SCREEN_W, SCREEN_H))
+            dark_overlay.set_alpha(180)  # 0 = transparent, 255 = opaque
+            dark_overlay.fill((0, 0, 0))
+            screen.blit(dark_overlay, (0, 0))
+            
+            # Update countdown timer
+            countdown_timer -= dt
+            
+            # Determine which number to show (3, 2, 1)
+            if countdown_timer > 2.0:
+                current_number = 3
+            elif countdown_timer > 1.0:
+                current_number = 2
+            elif countdown_timer > 0.0:
+                current_number = 1
+            else:
+                # Countdown finished, start game
+                current_state = GAME_PLAY
+                sound_manager.play_music('gameplay', loops=-1, fade_ms=500)
+                continue
+            
+            # Draw countdown number in center
+            if current_number in countdown_images:
+                img = countdown_images[current_number]
+                img_rect = img.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2))
+                screen.blit(img, img_rect)
+            else:
+                # Fallback: draw text if image not found
+                font_countdown = pygame.font.Font(None, 200)
+                text = font_countdown.render(str(current_number), True, (255, 255, 255))
+                text_rect = text.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2))
+                screen.blit(text, text_rect)
 
         elif current_state == GAME_PLAY:
             # Detect hands and get fist status

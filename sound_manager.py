@@ -18,10 +18,11 @@ class SoundManager:
     SOUND_FILES = {
         'hit': 'hit.wav',
         'damage': 'damage.wav', 
-        'powerup': 'powerup.wav', # diganti jika sudah ada
-        'game_over': 'game_over.wav', # diganti jika sudah ada
-        'level_up': 'level_up.wav', # diganti jika sudah ada
-        'button': 'button.wav' # diganti jika sudah ada
+        'powerup': 'powerup.wav',
+        'game_over': 'game_over.wav',
+        'level_up': 'level_up.wav',
+        'button': 'button.wav',
+        'countdown': 'countdown.mp3'
     }
     
     # Background music configurations
