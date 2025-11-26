@@ -1,23 +1,16 @@
 """
-UI Renderer
-Handles rendering of user interface elements.
-"""
+"""UI renderer - draws score, lives, FPS, hand status, powerups."""
 import pygame
 import os
+from typing import Optional, Dict, Any
 import config
 
 
 class UIRenderer:
-    """Renders UI elements like score, lives, FPS, hand status."""
+    """Renders UI elements: score, lives, FPS, hand indicators, powerups."""
     
-    def __init__(self, screen, assets_dir=config.IMAGES_DIR):
-        """
-        Initialize UI renderer.
-        
-        Args:
-            screen: Pygame screen surface
-            assets_dir: Directory containing UI assets
-        """
+    def __init__(self, screen: pygame.Surface, assets_dir: str = config.IMAGES_DIR) -> None:
+        """Initialize UI renderer with screen and load assets."""
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
@@ -32,8 +25,8 @@ class UIRenderer:
         # Load assets
         self._load_assets()
     
-    def _load_assets(self):
-        """Load UI assets."""
+    def _load_assets(self) -> None:
+        """Load UI assets (blood icons, menu button)."""
         # Load blood image for lives
         self.blood_image = None
         blood_path = os.path.join(self.assets_dir, 'blood.png')
@@ -52,18 +45,13 @@ class UIRenderer:
         else:
             print(f"[Warning] Menu button not found: {menu_path}")
     
-    def update_screen_size(self, width, height):
+    def update_screen_size(self, width: int, height: int) -> None:
         """Update screen dimensions."""
         self.screen_width = width
         self.screen_height = height
     
-    def draw_lives(self, lives):
-        """
-        Draw lives indicator (blood icons).
-        
-        Args:
-            lives: Number of lives remaining
-        """
+    def draw_lives(self, lives: int) -> None:
+        """Draw blood icons for remaining lives."""
         blood_size = config.BLOOD_ICON_SIZE[0]
         blood_spacing = 10
         blood_start_x = 20
@@ -79,24 +67,14 @@ class UIRenderer:
                 # Fallback: red circles
                 pygame.draw.circle(self.screen, config.RED, (x + blood_size//2, y + blood_size//2), blood_size//2)
     
-    def draw_score(self, score):
-        """
-        Draw score in top right corner.
-        
-        Args:
-            score: Current score
-        """
+    def draw_score(self, score: int) -> None:
+        """Draw score in top right corner."""
         score_text = self.font_medium.render(f"SCORE: {score}", True, config.WHITE)
         score_x = self.screen_width - score_text.get_width() - 20
         self.screen.blit(score_text, (score_x, 20))
     
-    def draw_fps(self, clock):
-        """
-        Draw FPS counter in bottom right corner.
-        
-        Args:
-            clock: Pygame clock object
-        """
+    def draw_fps(self, clock: pygame.time.Clock) -> None:
+        """Draw FPS counter in bottom right."""
         fps = int(clock.get_fps())
         fps_text = self.font_small.render(f"FPS: {fps}", True, config.GREEN)
         fps_x = self.screen_width - fps_text.get_width() - 20

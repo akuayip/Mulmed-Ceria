@@ -1,50 +1,52 @@
 """
-Countdown State
-Handles countdown animation before gameplay.
+Countdown State Module
+
+This module contains the CountdownState class which handles the countdown animation
+(3, 2, 1) before gameplay begins.
 """
 import pygame
+from typing import Optional, Dict, Any
 from states.base_state import BaseState
 import config
 
 
 class CountdownState(BaseState):
-    """Countdown state (3, 2, 1 before gameplay)."""
+    """
+    Countdown state that displays 3-2-1 countdown before gameplay.
     
-    def __init__(self, screen, sound_manager, game_renderer):
-        """
-        Initialize countdown state.
-        
-        Args:
-            screen: Pygame screen surface
-            sound_manager: Sound manager instance
-            game_renderer: Game renderer instance
-        """
+    This class manages:
+    - Countdown timer logic (3 seconds total)
+    - Visual countdown number rendering
+    - Countdown sound effect playback
+    - Automatic transition to gameplay when countdown finishes
+    
+    Attributes:
+        game_renderer: Renderer instance for drawing countdown visuals
+        countdown_timer: Remaining countdown time in seconds
+    """
+    
+    def __init__(self, screen: pygame.Surface, sound_manager, game_renderer) -> None:
+        """Initialize countdown with screen, sound, and renderer."""
         super().__init__(screen, sound_manager)
         self.game_renderer = game_renderer
-        self.countdown_timer = config.COUNTDOWN_DURATION
+        self.countdown_timer: float = config.COUNTDOWN_DURATION
     
-    def on_enter(self):
-        """Reset countdown and play sound."""
+    def on_enter(self) -> None:
+        """Reset timer, stop music, play countdown sound."""
         self.countdown_timer = config.COUNTDOWN_DURATION
-        self.sound_manager.stop_music()
-        self.sound_manager.play_sound('countdown')
+        
+        try:
+            self.sound_manager.stop_music()
+            self.sound_manager.play_sound('countdown')
+        except Exception as e:
+            print(f"[Warning] Failed to play countdown sound: {e}")
     
-    def on_exit(self):
+    def on_exit(self) -> None:
         """Cleanup when leaving countdown."""
         pass
     
-    def update(self, dt, landmarks, hand_info):
-        """
-        Update countdown timer.
-        
-        Args:
-            dt: Delta time
-            landmarks: Pose landmarks (not used)
-            hand_info: Hand detection info (not used)
-        
-        Returns:
-            int or None: GAME_PLAY when countdown finishes
-        """
+    def update(self, dt: float, landmarks: Optional[Any], hand_info: Dict[str, Any]) -> Optional[int]:
+        """Decrease timer, return GAME_PLAY when finished."""
         self.countdown_timer -= dt
         
         if self.countdown_timer <= 0:
@@ -52,8 +54,8 @@ class CountdownState(BaseState):
         
         return None
     
-    def render(self):
-        """Render countdown animation."""
+    def render(self) -> None:
+        """Draw background and countdown number (3, 2, or 1)."""
         # Draw background
         self.game_renderer.clear_screen()
         
@@ -68,16 +70,8 @@ class CountdownState(BaseState):
         # Draw countdown number
         self.game_renderer.draw_countdown(current_number)
     
-    def handle_event(self, event):
-        """
-        Handle events.
-        
-        Args:
-            event: Pygame event
-        
-        Returns:
-            int or None: GAME_MENU if ESC pressed
-        """
+    def handle_event(self, event: pygame.event.Event) -> Optional[int]:
+        """Handle keyboard: ESC=cancel to menu."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 return config.GAME_MENU

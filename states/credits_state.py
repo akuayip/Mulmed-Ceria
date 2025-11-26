@@ -1,51 +1,32 @@
-"""
-Credits State
-Handles credits screen display.
-"""
+"""Credits state - displays game developers and contributors."""
 import pygame
+from typing import Optional, Dict, Any
 from states.base_state import BaseState
 from utils.helpers import stable_hover, get_active_hand_position
 import config
 
 
 class CreditsState(BaseState):
-    """Credits screen state."""
+    """Credits screen with developer info and back button."""
     
-    def __init__(self, screen, sound_manager, menu_manager):
-        """
-        Initialize credits state.
-        
-        Args:
-            screen: Pygame screen surface
-            sound_manager: Sound manager instance
-            menu_manager: Menu manager instance
-        """
+    def __init__(self, screen: pygame.Surface, sound_manager, menu_manager) -> None:
+        """Initialize credits with screen, sound, and menu manager."""
         super().__init__(screen, sound_manager)
         self.menu_manager = menu_manager
+        self.click_timer: float = 0.0
+        self.prev_hand_pos: Optional[tuple] = None
+    
+    def on_enter(self) -> None:
+        """Reset timers and hand position."""
         self.click_timer = 0.0
         self.prev_hand_pos = None
     
-    def on_enter(self):
-        """Setup credits screen."""
-        self.click_timer = 0.0
-        self.prev_hand_pos = None
-    
-    def on_exit(self):
-        """Cleanup when leaving credits."""
+    def on_exit(self) -> None:
+        """Reset click timer."""
         self.click_timer = 0.0
     
-    def update(self, dt, landmarks, hand_info):
-        """
-        Update credits logic.
-        
-        Args:
-            dt: Delta time
-            landmarks: Pose landmarks (not used)
-            hand_info: Hand detection info
-        
-        Returns:
-            int or None: GAME_MENU if back button clicked
-        """
+    def update(self, dt: float, landmarks: Optional[Any], hand_info: Dict[str, Any]) -> Optional[int]:
+        """Detect hand hover on back button, return to menu when clicked."""
         active_hand_pos = get_active_hand_position(hand_info)
         hovered_button = self.menu_manager.check_button_hover(active_hand_pos)
         
@@ -53,7 +34,10 @@ class CreditsState(BaseState):
             self.click_timer += dt
             
             if self.click_timer >= config.CLICK_HOLD_TIME:
-                self.menu_manager.play_button_sound()
+                try:
+                    self.menu_manager.play_button_sound()
+                except Exception as e:
+                    print(f"[Warning] Failed to play button sound: {e}")
                 self.click_timer = 0.0
                 return config.GAME_MENU
         else:
@@ -62,20 +46,12 @@ class CreditsState(BaseState):
         self.prev_hand_pos = active_hand_pos
         return None
     
-    def render(self):
-        """Render credits screen."""
+    def render(self) -> None:
+        """Draw credits screen."""
         self.menu_manager.draw_credits_screen()
     
-    def handle_event(self, event):
-        """
-        Handle events.
-        
-        Args:
-            event: Pygame event
-        
-        Returns:
-            int or None: GAME_MENU if ESC pressed
-        """
+    def handle_event(self, event: pygame.event.Event) -> Optional[int]:
+        """Handle keyboard: ESC=return to menu."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 return config.GAME_MENU

@@ -1,9 +1,8 @@
 """
-Main Game Renderer
-Integrates all rendering components.
-"""
+"""Main renderer - coordinates all rendering components."""
 import pygame
 import os
+from typing import Optional, List, Any
 import config
 from rendering.stickman_renderer import StickmanRenderer
 from rendering.ui_renderer import UIRenderer
@@ -11,16 +10,10 @@ from rendering.countdown_renderer import CountdownRenderer
 
 
 class GameRenderer:
-    """Main renderer that coordinates all rendering components."""
+    """Integrates all rendering: backgrounds, stickman, UI, countdown."""
     
-    def __init__(self, screen, assets_dir=config.IMAGES_DIR):
-        """
-        Initialize game renderer.
-        
-        Args:
-            screen: Pygame screen surface
-            assets_dir: Directory containing image assets
-        """
+    def __init__(self, screen: pygame.Surface, assets_dir: str = config.IMAGES_DIR) -> None:
+        """Initialize renderer with screen and load backgrounds."""
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
@@ -34,8 +27,8 @@ class GameRenderer:
         # Load backgrounds
         self._load_backgrounds()
     
-    def _load_backgrounds(self):
-        """Load background images."""
+    def _load_backgrounds(self) -> None:
+        """Load and scale background images."""
         # Gameplay background
         self.play_bg = None
         play_bg_path = os.path.join(self.assets_dir, 'main_page.png')
@@ -62,14 +55,8 @@ class GameRenderer:
         else:
             print(f"[Warning] Game over logo not found: {logo_path}")
     
-    def update_screen_size(self, new_w, new_h):
-        """
-        Update screen dimensions when resized.
-        
-        Args:
-            new_w: New width
-            new_h: New height
-        """
+    def update_screen_size(self, new_w: int, new_h: int) -> None:
+        """Update screen dimensions and rescale backgrounds."""
         self.screen_width = new_w
         self.screen_height = new_h
         
@@ -91,22 +78,15 @@ class GameRenderer:
                 self.game_over_bg = pygame.image.load(game_over_path).convert()
                 self.game_over_bg = pygame.transform.scale(self.game_over_bg, (new_w, new_h))
     
-    def clear_screen(self):
-        """Clear screen with gameplay background or black."""
+    def clear_screen(self) -> None:
+        """Draw gameplay background or fill with black."""
         if self.play_bg:
             self.screen.blit(self.play_bg, (0, 0))
         else:
             self.screen.fill(config.BLACK)
     
-    def draw_game_objects(self, targets, obstacles, powerups):
-        """
-        Draw all game objects.
-        
-        Args:
-            targets: List of target objects
-            obstacles: List of obstacle objects
-            powerups: List of powerup objects
-        """
+    def draw_game_objects(self, targets: List[Any], obstacles: List[Any], powerups: List[Any]) -> None:
+        """Draw all game objects (targets, obstacles, powerups)."""
         for target in targets:
             target.draw(self.screen)
         
@@ -116,34 +96,16 @@ class GameRenderer:
         for powerup in powerups:
             powerup.draw(self.screen)
     
-    def draw_stickman(self, landmarks, pose_detector):
-        """
-        Draw stickman from pose landmarks.
-        
-        Args:
-            landmarks: MediaPipe pose landmarks
-            pose_detector: PoseDetector instance
-        """
+    def draw_stickman(self, landmarks: Any, pose_detector: Any) -> None:
+        """Draw stickman from pose landmarks."""
         self.stickman_renderer.draw(landmarks, pose_detector)
     
-    def draw_hand_indicators(self, hand_info):
-        """
-        Draw hand position indicators.
-        
-        Args:
-            hand_info: Hand detection info dictionary
-        """
+    def draw_hand_indicators(self, hand_info: Dict[str, Any]) -> None:
+        """Draw hand position indicators."""
         self.ui_renderer.draw_hand_indicators(hand_info)
     
-    def draw_ui(self, score_manager, clock, hand_info):
-        """
-        Draw all UI elements.
-        
-        Args:
-            score_manager: ScoreManager instance
-            clock: Pygame clock object
-            hand_info: Hand detection info dictionary
-        """
+    def draw_ui(self, score_manager: Any, clock: pygame.time.Clock, hand_info: Dict[str, Any]) -> None:
+        """Draw all UI elements (lives, score, FPS, powerups, hand status)."""
         self.ui_renderer.draw_lives(score_manager.lives)
         self.ui_renderer.draw_score(score_manager.score)
         self.ui_renderer.draw_fps(clock)
@@ -151,24 +113,12 @@ class GameRenderer:
         self.ui_renderer.draw_hand_status(hand_info)
         self.ui_renderer.draw_instructions()
     
-    def draw_countdown(self, countdown_number):
-        """
-        Draw countdown number.
-        
-        Args:
-            countdown_number: Number to display (1, 2, or 3)
-        """
+    def draw_countdown(self, countdown_number: int) -> None:
+        """Draw countdown number (1, 2, or 3)."""
         self.countdown_renderer.draw(countdown_number)
     
-    def draw_game_over_screen(self, score_manager, play_duration=0, phase=1):
-        """
-        Draw game over screen.
-        
-        Args:
-            score_manager: ScoreManager instance
-            play_duration: Total play time in seconds
-            phase: 1 for intro (logo), 2 for results
-        """
+    def draw_game_over_screen(self, score_manager: Any, play_duration: float = 0, phase: int = 1) -> None:
+        """Draw game over screen (phase 1=logo, phase 2=results)."""
         center_x = self.screen_width // 2
         center_y = self.screen_height // 2
         

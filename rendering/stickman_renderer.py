@@ -1,21 +1,15 @@
 """
-Stickman Renderer
-Handles rendering of pose landmarks as stickman.
-"""
+"""Stickman renderer - draws pose landmarks as stickman figure."""
 import pygame
 import mediapipe as mp
+from typing import Optional, Tuple, Any
 
 
 class StickmanRenderer:
-    """Renders pose landmarks as a stickman figure."""
+    """Renders pose landmarks as white stickman figure."""
     
-    def __init__(self, screen):
-        """
-        Initialize stickman renderer.
-        
-        Args:
-            screen: Pygame screen surface
-        """
+    def __init__(self, screen: pygame.Surface) -> None:
+        """Initialize stickman renderer with screen."""
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
@@ -28,19 +22,13 @@ class StickmanRenderer:
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
     
-    def update_screen_size(self, width, height):
+    def update_screen_size(self, width: int, height: int) -> None:
         """Update screen dimensions."""
         self.screen_width = width
         self.screen_height = height
     
-    def draw(self, landmarks, pose_detector):
-        """
-        Draw stickman from pose landmarks.
-        
-        Args:
-            landmarks: MediaPipe pose landmarks
-            pose_detector: PoseDetector instance for coordinate conversion
-        """
+    def draw(self, landmarks: Any, pose_detector: Any) -> None:
+        """Draw stickman from pose landmarks."""
         if not landmarks:
             return
         
@@ -77,14 +65,14 @@ class StickmanRenderer:
         self._draw_joints(neck_point, pelvis_point, left_elbow, right_elbow, left_knee, right_knee, left_wrist, right_wrist, left_ankle, right_ankle)
         self._draw_head(head_center, head_radius)
     
-    def _calculate_midpoint(self, point1, point2):
+    def _calculate_midpoint(self, point1: Optional[Tuple[int, int]], point2: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
         """Calculate midpoint between two points."""
         if point1 and point2:
             return ((point1[0] + point2[0]) // 2, (point1[1] + point2[1]) // 2)
         return None
     
-    def _calculate_head_position(self, nose, left_ear, right_ear):
-        """Calculate head center and radius."""
+    def _calculate_head_position(self, nose: Optional[Tuple[int, int]], left_ear: Optional[Tuple[int, int]], right_ear: Optional[Tuple[int, int]]) -> Tuple[Optional[Tuple[int, int]], int]:
+        """Calculate head center and radius from nose and ear positions."""
         if not nose:
             return None, 30
         
@@ -95,18 +83,18 @@ class StickmanRenderer:
         
         return nose, head_radius
     
-    def _draw_torso(self, neck_point, pelvis_point):
-        """Draw the torso line."""
+    def _draw_torso(self, neck_point: Optional[Tuple[int, int]], pelvis_point: Optional[Tuple[int, int]]) -> None:
+        """Draw torso line from neck to pelvis."""
         if neck_point and pelvis_point:
             pygame.draw.line(self.screen, self.body_color, neck_point, pelvis_point, self.line_thickness)
     
-    def _draw_neck(self, head_center, neck_point):
-        """Draw the neck line."""
+    def _draw_neck(self, head_center: Optional[Tuple[int, int]], neck_point: Optional[Tuple[int, int]]) -> None:
+        """Draw neck line from head to shoulders."""
         if head_center and neck_point:
             pygame.draw.line(self.screen, self.body_color, head_center, neck_point, self.line_thickness)
     
-    def _draw_arms(self, neck_point, left_elbow, left_wrist, right_elbow, right_wrist):
-        """Draw both arms."""
+    def _draw_arms(self, neck_point: Optional[Tuple[int, int]], left_elbow: Optional[Tuple[int, int]], left_wrist: Optional[Tuple[int, int]], right_elbow: Optional[Tuple[int, int]], right_wrist: Optional[Tuple[int, int]]) -> None:
+        """Draw both arms (upper and lower)."""
         if neck_point:
             # Left arm
             if left_elbow:
@@ -120,8 +108,8 @@ class StickmanRenderer:
                 if right_wrist:
                     pygame.draw.line(self.screen, self.body_color, right_elbow, right_wrist, self.line_thickness)
     
-    def _draw_legs(self, pelvis_point, left_knee, left_ankle, right_knee, right_ankle):
-        """Draw both legs."""
+    def _draw_legs(self, pelvis_point: Optional[Tuple[int, int]], left_knee: Optional[Tuple[int, int]], left_ankle: Optional[Tuple[int, int]], right_knee: Optional[Tuple[int, int]], right_ankle: Optional[Tuple[int, int]]) -> None:
+        """Draw both legs (upper and lower)."""
         if pelvis_point:
             # Left leg
             if left_knee:
@@ -135,8 +123,8 @@ class StickmanRenderer:
                 if right_ankle:
                     pygame.draw.line(self.screen, self.body_color, right_knee, right_ankle, self.line_thickness)
     
-    def _draw_joints(self, neck_point, pelvis_point, left_elbow, right_elbow, left_knee, right_knee, left_wrist, right_wrist, left_ankle, right_ankle):
-        """Draw all joint circles."""
+    def _draw_joints(self, neck_point: Optional[Tuple[int, int]], pelvis_point: Optional[Tuple[int, int]], left_elbow: Optional[Tuple[int, int]], right_elbow: Optional[Tuple[int, int]], left_knee: Optional[Tuple[int, int]], right_knee: Optional[Tuple[int, int]], left_wrist: Optional[Tuple[int, int]], right_wrist: Optional[Tuple[int, int]], left_ankle: Optional[Tuple[int, int]], right_ankle: Optional[Tuple[int, int]]) -> None:
+        """Draw circles at all joint positions."""
         all_joints = [
             neck_point, pelvis_point,
             left_elbow, right_elbow,
@@ -149,7 +137,7 @@ class StickmanRenderer:
             if joint:
                 pygame.draw.circle(self.screen, self.body_color, joint, self.joint_radius)
     
-    def _draw_head(self, head_center, head_radius):
-        """Draw the head circle."""
+    def _draw_head(self, head_center: Optional[Tuple[int, int]], head_radius: int) -> None:
+        """Draw head as circle."""
         if head_center:
             pygame.draw.circle(self.screen, self.body_color, head_center, head_radius)

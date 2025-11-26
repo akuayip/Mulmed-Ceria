@@ -1,23 +1,16 @@
 """
-Countdown Renderer
-Handles countdown animation rendering.
-"""
+"""Countdown renderer - displays 3-2-1 countdown animation."""
 import pygame
 import os
+from typing import Dict
 import config
 
 
 class CountdownRenderer:
-    """Renders countdown animation."""
+    """Renders countdown numbers with dark overlay."""
     
-    def __init__(self, screen, assets_dir=config.IMAGES_DIR):
-        """
-        Initialize countdown renderer.
-        
-        Args:
-            screen: Pygame screen surface
-            assets_dir: Directory containing countdown images
-        """
+    def __init__(self, screen: pygame.Surface, assets_dir: str = config.IMAGES_DIR) -> None:
+        """Initialize countdown renderer and load number images."""
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
@@ -27,11 +20,11 @@ class CountdownRenderer:
         self.font_countdown = pygame.font.Font(None, 200)
         
         # Load countdown images
-        self.countdown_images = {}
+        self.countdown_images: Dict[int, pygame.Surface] = {}
         self._load_countdown_images()
     
-    def _load_countdown_images(self):
-        """Load countdown number images."""
+    def _load_countdown_images(self) -> None:
+        """Load countdown number images (1, 2, 3)."""
         for i in [1, 2, 3]:
             img_path = os.path.join(self.assets_dir, f'number_{i}.png')
             if os.path.exists(img_path):
@@ -40,18 +33,13 @@ class CountdownRenderer:
             else:
                 print(f"[Warning] Countdown image not found: {img_path}")
     
-    def update_screen_size(self, width, height):
+    def update_screen_size(self, width: int, height: int) -> None:
         """Update screen dimensions."""
         self.screen_width = width
         self.screen_height = height
     
-    def draw(self, countdown_number):
-        """
-        Draw countdown number.
-        
-        Args:
-            countdown_number: Number to display (1, 2, or 3)
-        """
+    def draw(self, countdown_number: int) -> None:
+        """Draw countdown number with dark overlay."""
         # Draw dark overlay
         dark_overlay = pygame.Surface((self.screen_width, self.screen_height))
         dark_overlay.set_alpha(180)

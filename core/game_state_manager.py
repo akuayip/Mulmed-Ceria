@@ -1,21 +1,14 @@
-"""
-Game State Manager
-Handles state transitions and state-specific logic.
-"""
+"""Handles game state transitions and state-specific logic."""
 import config
+from typing import Optional, Dict, Any
+import pygame
 
 
 class GameStateManager:
     """Manages game states and transitions."""
     
-    def __init__(self, screen, sound_manager):
-        """
-        Initialize game state manager.
-        
-        Args:
-            screen: Pygame screen surface
-            sound_manager: Sound manager instance
-        """
+    def __init__(self, screen: pygame.Surface, sound_manager: Any) -> None:
+        """Initialize game state manager."""
         self.screen = screen
         self.sound_manager = sound_manager
         self.current_state_id = config.GAME_MENU
@@ -24,24 +17,14 @@ class GameStateManager:
         self.states = {}
         self.current_state = None
     
-    def initialize_states(self, state_dict):
-        """
-        Initialize all game states.
-        
-        Args:
-            state_dict: Dictionary mapping state IDs to state instances
-        """
+    def initialize_states(self, state_dict: Dict[int, Any]) -> None:
+        """Initialize all game states."""
         self.states = state_dict
         self.current_state = self.states[self.current_state_id]
         self.current_state.on_enter()
     
-    def change_state(self, new_state_id):
-        """
-        Change to a new state.
-        
-        Args:
-            new_state_id: ID of the new state to transition to
-        """
+    def change_state(self, new_state_id: Optional[int]) -> None:
+        """Change to new state."""
         if new_state_id is None or new_state_id == self.current_state_id:
             return
         

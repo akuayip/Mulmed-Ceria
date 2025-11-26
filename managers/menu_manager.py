@@ -1,5 +1,6 @@
 import pygame
 import os
+from typing import Optional, Tuple
 
 
 
@@ -14,14 +15,8 @@ class MenuManager:
         'back':    {'file': 'back.png',   'pos': (0.10, 0.88)}
     }
 
-    def __init__(self, screen, assets_dir='assets/images'):
-        """
-        Initialize menu manager.
-        
-        Args:
-            screen: Pygame display surface
-            assets_dir: Path to assets directory
-        """
+    def __init__(self, screen: pygame.Surface, assets_dir: str = 'assets/images') -> None:
+        """Initialize menu manager with screen and assets directory."""
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
@@ -45,8 +40,8 @@ class MenuManager:
 
     # ASSET LOADING
 
-    def _load_backgrounds(self):
-        """Load background untuk menu, credits, dan guide."""
+    def _load_backgrounds(self) -> None:
+        """Load backgrounds for menu, credits, and guide."""
 
         bg_files = {
             "bg_menu": "landing_page.png",
@@ -64,8 +59,8 @@ class MenuManager:
                 print(f"[Warning] Background missing: {path}")
                 setattr(self, attr, None)
 
-    def _load_buttons(self):
-        """Load & scale tombol berdasarkan konfigurasi."""
+    def _load_buttons(self) -> None:
+        """Load and scale buttons based on configuration."""
         target_height = int(self.screen_height / 8)
 
         for name, info in self.BUTTON_CONFIG.items():
@@ -115,15 +110,15 @@ class MenuManager:
 
     # PUBLIC DRAW FUNCTIONS (called from main.py)
 
-    def draw_menu(self):
+    def draw_menu(self) -> None:
         self._draw_background(self.bg_menu)
         self._draw_buttons(('start', 'guide', 'credits'))
 
-    def draw_credits_screen(self):
+    def draw_credits_screen(self) -> None:
         self._draw_background(self.bg_credits)
         self._draw_buttons(('back',))
 
-    def draw_guide_screen(self):
+    def draw_guide_screen(self) -> None:
         self._draw_background(self.bg_guide)
         self._draw_title("How to Play")
 
@@ -152,8 +147,8 @@ class MenuManager:
 
     # Interaction
 
-    def check_button_hover(self, hand_pos):
-        """Return nama tombol jika hover, else None."""
+    def check_button_hover(self, hand_pos: Optional[Tuple[int, int]]) -> Optional[str]:
+        """Return button name if hovered, else None."""
         if hand_pos is None:
             return None
         
@@ -163,7 +158,7 @@ class MenuManager:
         
         return None
 
-    def play_button_sound(self):
+    def play_button_sound(self) -> None:
         if self.sound_manager:
             self.sound_manager.play_sound('button')
 

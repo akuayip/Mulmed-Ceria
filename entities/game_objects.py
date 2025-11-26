@@ -1,7 +1,4 @@
-"""
-Game Objects Module
-Defines Target, Obstacle, and PowerUp classes for the game.
-"""
+"""Target, Obstacle, and PowerUp classes for the game."""
 
 import pygame
 import random
@@ -12,10 +9,8 @@ from typing import Tuple
 class GameObject:
     """Base class for all game objects."""
 
-    def __init__(self, x: int, y: int, radius: int, color: Tuple[int, int, int], speed: float):
-        """
-        Initialize game object.
-        """
+    def __init__(self, x: int, y: int, radius: int, color: Tuple[int, int, int], speed: float) -> None:
+        """Initialize game object."""
         self.x = x
         self.y = y
         self.radius = radius
@@ -23,11 +18,11 @@ class GameObject:
         self.speed = speed
         self.active = True
 
-    def update(self, dt: float):
+    def update(self, dt: float) -> None:
         """Update object position."""
         pass  # To be overridden by subclasses
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface: pygame.Surface) -> None:
         """Draw object on surface."""
         if self.active:
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
@@ -38,18 +33,14 @@ class GameObject:
 
 
 class Target(GameObject):
-    """
-    Target object that player should punch for points.
-    """
+    """Target object that player should punch for points."""
     DEFAULT_RADIUS = 25
     SPEED_RANGE = (50, 150)  # (min_speed, max_speed)
     POINTS = 10
     COLOR = (0, 255, 0)  # Green
 
-    def __init__(self, x: int, y: int, screen_width: int, screen_height: int):
-        """
-        Initialize Target.
-        """
+    def __init__(self, x: int, y: int, screen_width: int, screen_height: int) -> None:
+        """Initialize target."""
         super().__init__(
             x, y,
             radius=self.DEFAULT_RADIUS,
@@ -62,7 +53,7 @@ class Target(GameObject):
         self.direction_y = random.choice([-1, 1])
         self.points = self.POINTS
 
-    def update(self, dt: float):
+    def update(self, dt: float) -> None:
         """Move target and bounce off walls."""
         if not self.active:
             return
@@ -78,7 +69,7 @@ class Target(GameObject):
             self.direction_y *= -1
             self.y = max(self.radius, min(self.y, self.screen_height - self.radius))
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface: pygame.Surface) -> None:
         """Draw target with inner circle."""
         if self.active:
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
@@ -87,9 +78,7 @@ class Target(GameObject):
 
 
 class Obstacle(GameObject):
-    """
-    Obstacle object that damages player if hit.
-    """
+    """Obstacle object that damages player if hit."""
     DEFAULT_RADIUS = 30
     SPEED_RANGE = (80, 200)
     COLOR = (255, 0, 0)  # Red
@@ -98,10 +87,8 @@ class Obstacle(GameObject):
     LIFETIME = 10.0  # Seconds
     DEACTIVATE_DISTANCE = 50  # Distance from target to deactivate
 
-    def __init__(self, x: int, y: int, screen_width: int, screen_height: int):
-        """
-        Initialize Obstacle.
-        """
+    def __init__(self, x: int, y: int, screen_width: int, screen_height: int) -> None:
+        """Initialize obstacle."""
         super().__init__(
             x, y,
             radius=self.DEFAULT_RADIUS,
@@ -117,7 +104,7 @@ class Obstacle(GameObject):
         self.target_x = self.screen_width // 2 + random.randint(-100, 100)
         self.target_y = self.screen_height // 2 + random.randint(-100, 100)
 
-    def update(self, dt: float):
+    def update(self, dt: float) -> None:
         """Move obstacle towards player (center-ish)."""
         if not self.active:
             return
@@ -140,7 +127,7 @@ class Obstacle(GameObject):
             self.x += (dx / distance) * self.speed * dt
             self.y += (dy / distance) * self.speed * dt
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface: pygame.Surface) -> None:
         """Draw obstacle with warning sign."""
         if self.active:
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
@@ -157,19 +144,15 @@ class Obstacle(GameObject):
 
 
 class PowerUp(GameObject):
-    """
-    Power-up object that gives player bonus.
-    """
+    """Power-up object that gives player bonus."""
     TYPES = ['shield', 'double_score', 'slow_motion']
     DEFAULT_RADIUS = 20
     COLOR = (255, 255, 0)  # Yellow
     SPEED = 100  
     LIFETIME = 5.0  # Seconds
 
-    def __init__(self, x: int, y: int, screen_width: int, screen_height: int):
-        """
-        Initialize PowerUp.
-        """
+    def __init__(self, x: int, y: int, screen_width: int, screen_height: int) -> None:
+        """Initialize power-up."""
         super().__init__(
             x, y,
             radius=self.DEFAULT_RADIUS,
@@ -181,7 +164,7 @@ class PowerUp(GameObject):
         self.type = random.choice(self.TYPES)
         self.time_alive = 0
 
-    def update(self, dt: float):
+    def update(self, dt: float) -> None:
         """Update power-up (floating effect)."""
         if not self.active:
             return
@@ -194,7 +177,7 @@ class PowerUp(GameObject):
         # Floating effect (sine wave)
         self.y += math.sin(self.time_alive * 3) * 2
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface: pygame.Surface) -> None:
         """Draw power-up with star effect."""
         if self.active:
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)

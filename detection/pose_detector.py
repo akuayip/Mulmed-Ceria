@@ -1,36 +1,23 @@
-"""
-Pose Detector Module
-Handles human pose detection and hand gesture recognition using MediaPipe.
-"""
+"""Pose detection and hand gesture recognition using MediaPipe."""
 
 import mediapipe as mp
 import cv2
+from typing import Tuple, Optional, Dict, Any
+import numpy as np
 
 
 class PoseDetector:
-    """
-    A class to detect human pose and hand gestures using MediaPipe.
-    Detects body pose (33 landmarks) and hand gestures (21 landmarks per hand).
-    """
+    """Detects human pose (33 landmarks) and hand gestures (21 landmarks per hand) using MediaPipe."""
 
     def __init__(
         self,
-        static_image_mode=False,
-        model_complexity=1,
-        smooth_landmarks=True,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
-    ):
-        """
-        Initialize the PoseDetector with both pose and hands detection.
-
-        Args:
-            static_image_mode: Whether to treat input as static images
-            model_complexity: Complexity of pose model (0, 1, or 2)
-            smooth_landmarks: Whether to smooth landmarks across frames
-            min_detection_confidence: Minimum confidence for detection
-            min_tracking_confidence: Minimum confidence for tracking
-        """
+        static_image_mode: bool = False,
+        model_complexity: int = 1,
+        smooth_landmarks: bool = True,
+        min_detection_confidence: float = 0.5,
+        min_tracking_confidence: float = 0.5
+    ) -> None:
+        """Initialize pose and hands detection with MediaPipe."""
         # Initialize MediaPipe Pose
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose(
@@ -58,18 +45,8 @@ class PoseDetector:
         self.RING_TIP = 16
         self.PINKY_TIP = 20
 
-    def detect_pose(self, frame):
-        """
-        Detect pose landmarks in the given frame.
-
-        Args:
-            frame: Input BGR image from camera
-
-        Returns:
-            tuple: (processed_frame, landmarks)
-                - processed_frame: RGB frame after processing
-                - landmarks: Detected pose landmarks or None
-        """
+    def detect_pose(self, frame: np.ndarray) -> Tuple[np.ndarray, Any]:
+        """Detect pose landmarks in BGR frame, return RGB frame and landmarks."""
         # Convert BGR to RGB for MediaPipe
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
@@ -78,35 +55,13 @@ class PoseDetector:
         
         return frame_rgb, results.pose_landmarks
 
-    def detect_hands(self, frame_rgb):
-        """
-        Detect hand landmarks in the given frame.
-
-        Args:
-            frame_rgb: Input RGB image
-
-        Returns:
-            hands_results: MediaPipe hands results containing multi_hand_landmarks and multi_handedness
-        """
+    def detect_hands(self, frame_rgb: np.ndarray) -> Any:
+        """Detect hand landmarks in RGB frame."""
         results = self.hands.process(frame_rgb)
         return results
 
-    def is_fist(self, hand_landmarks):
-        """
-        Determine if a hand is making a fist gesture.
-        
-        Algorithm:
-        - Calculate distance from each fingertip to wrist
-        - Calculate distance from each fingertip to palm center (landmark 0)
-        - If all fingers are close to palm → FIST
-        - If fingers are extended → OPEN HAND
-        
-        Args:
-            hand_landmarks: MediaPipe hand landmarks
-            
-        Returns:
-            bool: True if hand is making a fist, False otherwise
-        """
+    def is_fist(self, hand_landmarks: Any) -> bool:
+        """Check if hand is making a fist (all fingertips close to wrist)."""
         if not hand_landmarks:
             return False
         
@@ -143,29 +98,8 @@ class PoseDetector:
         
         return fingers_closed
 
-    def get_hand_info(self, frame_rgb, frame_width, frame_height):
-        """
-        Get hand positions and fist status for both hands.
-        
-        Args:
-            frame_rgb: RGB frame
-            frame_width: Width of the frame in pixels
-            frame_height: Height of the frame in pixels
-            
-        Returns:
-            dict: {
-                'left_hand': {
-                    'position': (x, y) or None,
-                    'is_fist': bool,
-                    'landmarks': hand_landmarks or None
-                },
-                'right_hand': {
-                    'position': (x, y) or None,
-                    'is_fist': bool,
-                    'landmarks': hand_landmarks or None
-                }
-            }
-        """
+    def get_hand_info(self, frame_rgb: np.ndarray, frame_width: int, frame_height: int) -> Dict[str, Dict[str, Any]]:
+        """Get positions and fist status for both hands."""
         hands_results = self.detect_hands(frame_rgb)
         
         hand_info = {
@@ -205,19 +139,8 @@ class PoseDetector:
         
         return hand_info
 
-    def get_landmark_position(self, landmarks, landmark_id, frame_width, frame_height):
-        """
-        Get the pixel position of a specific landmark.
-
-        Args:
-            landmarks: Pose landmarks object
-            landmark_id: ID of the landmark to retrieve
-            frame_width: Width of the frame
-            frame_height: Height of the frame
-
-        Returns:
-            tuple: (x, y) pixel coordinates or None
-        """
+    def get_landmark_position(self, landmarks: Any, landmark_id: int, frame_width: int, frame_height: int) -> Optional[Tuple[int, int]]:
+        """Get pixel position of specific landmark."""
         if landmarks and len(landmarks.landmark) > landmark_id:
             landmark = landmarks.landmark[landmark_id]
             x = int(landmark.x * frame_width)
@@ -225,13 +148,13 @@ class PoseDetector:
             return (x, y)
         return None
     
-    def to_screen_coordinates(self, x, y, cam_w, cam_h, screen_w, screen_h):
-        """Convert posisi landmark dari ukuran kamera → layar pygame."""
+    def to_screen_coordinates(self, x: int, y: int, cam_w: int, cam_h: int, screen_w: int, screen_h: int) -> Tuple[int, int]:
+        """Convert landmark position from camera size to screen size."""
         sx = int((x / cam_w) * screen_w)
         sy = int((y / cam_h) * screen_h)
         return (sx, sy)
 
-    def close(self):
-        """Release resources."""
+    def close(self) -> None:
+        """Release MediaPipe resources."""
         self.pose.close()
         self.hands.close()

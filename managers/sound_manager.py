@@ -1,10 +1,8 @@
-"""
-Sound Manager Module
-Handles all game audio including sound effects and background music.
-"""
+"""Handles all game audio including sound effects and background music."""
 
 import pygame
 import os
+from typing import Optional
 
 
 class SoundManager:
@@ -31,14 +29,8 @@ class SoundManager:
         'gameplay': 'battle.wav', # diganti jika sudah ada
     }
 
-    def __init__(self, sounds_dir='assets/sounds', music_dir='assets/sounds'):
-        """
-        Initialize SoundManager.
-
-        Args:
-            sounds_dir: Directory containing sound effect files
-            music_dir: Directory containing music files (default same as sounds_dir)
-        """
+    def __init__(self, sounds_dir: str = 'assets/sounds', music_dir: str = 'assets/sounds') -> None:
+        """Initialize sound manager with audio directories."""
         pygame.mixer.init()
         
         self.sounds_dir = sounds_dir
@@ -61,7 +53,7 @@ class SoundManager:
         self._load_sounds()
         self._load_music()
 
-    def _load_sounds(self):
+    def _load_sounds(self) -> None:
         """Load all sound effects."""
         for sound_name, filename in self.SOUND_FILES.items():
             filepath = os.path.join(self.sounds_dir, filename)
@@ -78,7 +70,7 @@ class SoundManager:
                 print(f"[Error] Could not load sound {sound_name}: {e}")
                 self.sounds[sound_name] = None
 
-    def _load_music(self):
+    def _load_music(self) -> None:
         """Load and verify all music files."""
         for state, filename in self.MUSIC_FILES.items():
             filepath = os.path.join(self.music_dir, filename)
@@ -88,16 +80,8 @@ class SoundManager:
             else:
                 print(f"[Warning] Music file not found: {filepath}")
 
-    def _create_placeholder_sound(self, sound_type: str):
-        """
-        Create a simple placeholder sound effect.
-
-        Args:
-            sound_type: Type of sound to create
-
-        Returns:
-            pygame.mixer.Sound or None
-        """
+    def _create_placeholder_sound(self, sound_type: str) -> Optional[pygame.mixer.Sound]:
+        """Create simple placeholder sound effect."""
         try:
             import numpy as np
             
@@ -138,13 +122,8 @@ class SoundManager:
 
     # === SOUND EFFECTS ===
 
-    def play_sound(self, sound_name: str):
-        """
-        Play a sound effect.
-
-        Args:
-            sound_name: Name of the sound to play
-        """
+    def play_sound(self, sound_name: str) -> None:
+        """Play sound effect by name."""
         if not self.sound_enabled:
             return
 
@@ -156,15 +135,8 @@ class SoundManager:
 
     # === BACKGROUND MUSIC ===
     
-    def play_music(self, music_state: str, loops=-1, fade_ms=0):
-        """
-        Play background music for specific game state.
-
-        Args:
-            music_state: Game state ('menu', 'gameplay')
-            loops: Number of loops (-1 for infinite)
-            fade_ms: Fade-in duration in milliseconds
-        """
+    def play_music(self, music_state: str, loops: int = -1, fade_ms: int = 0) -> None:
+        """Play background music for game state."""
         if not self.music_enabled:
             return
         
@@ -185,13 +157,8 @@ class SoundManager:
         except Exception as e:
             print(f"[Error] Failed to play music '{music_state}': {e}")
 
-    def stop_music(self, fade_ms=0):
-        """
-        Stop currently playing music.
-
-        Args:
-            fade_ms: Fade-out duration in milliseconds
-        """
+    def stop_music(self, fade_ms: int = 0) -> None:
+        """Stop currently playing music."""
         if fade_ms > 0:
             pygame.mixer.music.fadeout(fade_ms)
         else:
@@ -236,42 +203,27 @@ class SoundManager:
         
         return self.music_enabled
 
-    def set_sfx_volume(self, volume: float):
-        """
-        Set sound effects volume.
-
-        Args:
-            volume: Volume level (0.0 to 1.0)
-        """
+    def set_sfx_volume(self, volume: float) -> None:
+        """Set sound effects volume (0.0 to 1.0)."""
         self.sfx_volume = max(0.0, min(1.0, volume))
         
         for sound in self.sounds.values():
             if sound:
                 sound.set_volume(self.sfx_volume)
 
-    def set_music_volume(self, volume: float):
-        """
-        Set background music volume.
-
-        Args:
-            volume: Volume level (0.0 to 1.0)
-        """
+    def set_music_volume(self, volume: float) -> None:
+        """Set background music volume (0.0 to 1.0)."""
         self.music_volume = max(0.0, min(1.0, volume))
         pygame.mixer.music.set_volume(self.music_volume)
 
-    def set_volume(self, volume: float):
-        """
-        Set master volume (both SFX and music).
-
-        Args:
-            volume: Volume level (0.0 to 1.0)
-        """
+    def set_volume(self, volume: float) -> None:
+        """Set master volume for both SFX and music (0.0 to 1.0)."""
         self.set_sfx_volume(volume)
         self.set_music_volume(volume)
 
     # === CLEANUP ===
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up pygame mixer."""
         try:
             if pygame.mixer.get_init():

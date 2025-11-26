@@ -1,63 +1,47 @@
-"""
-Game Over State
-Handles game over screen and results.
-"""
+"""Game over state - displays final score and statistics."""
 import pygame
+from typing import Optional, Dict, Any
 from states.base_state import BaseState
 from utils.helpers import stable_hover, get_active_hand_position
 import config
 
 
 class GameOverState(BaseState):
-    """Game over state."""
+    """Game over screen with two phases: intro logo, then detailed results."""
     
-    def __init__(self, screen, sound_manager, game_engine, game_renderer):
-        """
-        Initialize game over state.
-        
-        Args:
-            screen: Pygame screen surface
-            sound_manager: Sound manager instance
-            game_engine: Game engine instance
-            game_renderer: Game renderer instance
-        """
+    def __init__(self, screen: pygame.Surface, sound_manager, game_engine, game_renderer) -> None:
+        """Initialize game over with screen, sound, engine, and renderer."""
         super().__init__(screen, sound_manager)
         self.game_engine = game_engine
         self.game_renderer = game_renderer
         
         # State variables
-        self.game_over_timer = 0
-        self.phase = 1  # 1 = intro (logo), 2 = results
-        self.play_duration = 0
-        self.click_timer = 0.0
-        self.prev_hand_pos = None
+        self.game_over_timer: float = 0.0
+        self.phase: int = 1  # 1 = intro (logo), 2 = results
+        self.play_duration: float = 0.0
+        self.click_timer: float = 0.0
+        self.prev_hand_pos: Optional[tuple] = None
     
-    def on_enter(self):
-        """Initialize game over state."""
-        self.sound_manager.stop_music()
-        self.sound_manager.play_sound('game_over')
-        self.game_over_timer = 0
+    def on_enter(self) -> None:
+        """Stop music, play game over sound, reset timers."""
+        try:
+            self.sound_manager.stop_music()
+            self.sound_manager.play_sound('game_over')
+        except Exception as e:
+            print(f"[Warning] Failed to play game over sound: {e}")
+        
+        self.game_over_timer = 0.0
         self.phase = 1
         self.click_timer = 0.0
         self.prev_hand_pos = None
     
-    def on_exit(self):
-        """Cleanup when leaving game over."""
-        self.game_over_timer = 0
+    def on_exit(self) -> None:
+        """Reset timers and phase."""
+        self.game_over_timer = 0.0
         self.phase = 1
     
-    def update(self, dt, landmarks, hand_info):
-        """
-        Update game over logic.
-        
-        Args:
-            dt: Delta time
-            landmarks: Pose landmarks (not used)
-            hand_info: Hand detection info
-        
-        Returns:
-            int or None: GAME_MENU if menu button clicked
-        """
+    def update(self, dt: float, landmarks: Optional[Any], hand_info: Dict[str, Any]) -> Optional[int]:
+        """Transition phases, detect menu button click in phase 2."""
         self.game_over_timer += dt
         
         # Transition from phase 1 to phase 2
@@ -77,7 +61,10 @@ class GameOverState(BaseState):
                         self.click_timer += dt
                         
                         if self.click_timer >= config.CLICK_HOLD_TIME:
-                            self.sound_manager.play_sound('button')
+                            try:
+                                self.sound_manager.play_sound('button')
+                            except Exception as e:
+                                print(f"[Warning] Failed to play button sound: {e}")
                             return config.GAME_MENU
                 else:
                     self.click_timer = 0.0
@@ -86,33 +73,20 @@ class GameOverState(BaseState):
         
         return None
     
-    def render(self):
-        """Render game over screen."""
+    def render(self) -> None:
+        """Draw game over screen (logo in phase 1, results in phase 2)."""
         self.game_renderer.draw_game_over_screen(
             self.game_engine.score_manager,
             self.play_duration,
             self.phase
         )
     
-    def set_play_duration(self, duration):
-        """
-        Set the play duration to display.
-        
-        Args:
-            duration: Play duration in seconds
-        """
+    def set_play_duration(self, duration: float) -> None:
+        """Set gameplay duration to display on screen."""
         self.play_duration = duration
     
-    def handle_event(self, event):
-        """
-        Handle events.
-        
-        Args:
-            event: Pygame event
-        
-        Returns:
-            int or None: Next state or None
-        """
+    def handle_event(self, event: pygame.event.Event) -> Optional[int]:
+        """Handle keyboard events for restart/menu."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
                 return config.GAME_COUNTDOWN

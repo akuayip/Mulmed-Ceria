@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import random
 import mediapipe as mp
+from typing import Optional, List, Dict, Any
 
 # Import modul eksternal
 from detection.pose_detector import PoseDetector
@@ -15,12 +16,9 @@ from managers.spawn_manager import SpawnManager
 
 
 class GameEngine:
-    """
-    Menangani logika inti game, update objek, dan deteksi tabrakan.
-    Loop utama ditangani oleh main.py.
-    """
+    """Handles core game logic, object updates, and collision detection."""
 
-    def __init__(self, screen, pose_detector, game_renderer, spawn_manager):
+    def __init__(self, screen: pygame.Surface, pose_detector: Any, game_renderer: Any, spawn_manager: Any) -> None:
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
@@ -98,15 +96,8 @@ class GameEngine:
         self.powerups.clear()
         self.spawn_manager.reset_timers()
 
-    def update(self, dt: float, landmarks, hand_info):
-        """
-        Update game logic.
-        
-        Args:
-            dt: Delta time in seconds
-            landmarks: Body pose landmarks
-            hand_info: Hand tracking information with fist status
-        """
+    def update(self, dt: float, landmarks: Any, hand_info: Dict[str, Dict[str, Any]]) -> None:
+        """Update game logic including objects and collisions."""
         if self.paused or self.score_manager.game_over:
             return
 
@@ -138,14 +129,8 @@ class GameEngine:
         self.obstacles = [o for o in self.obstacles if o.active]
 
 
-    def check_collisions(self, landmarks, hand_info):
-        """
-        Check collisions between pose/hands and game objects.
-        
-        Args:
-            landmarks: Body pose landmarks
-            hand_info: Hand tracking information with fist status
-        """
+    def check_collisions(self, landmarks: Any, hand_info: Dict[str, Dict[str, Any]]) -> None:
+        """Check collisions between hands and game objects."""
         # Extract hand positions and fist status
         left_hand_pos = hand_info['left_hand']['position']
         right_hand_pos = hand_info['right_hand']['position']
