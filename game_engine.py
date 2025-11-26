@@ -5,13 +5,13 @@ import random
 import mediapipe as mp
 
 # Import modul eksternal
-from pose_detector import PoseDetector
-from collision_detector import CollisionDetector
-from game_objects import Target, Obstacle, PowerUp
-from score_manager import ScoreManager
-from sound_manager import SoundManager
-from renderer import GameRenderer
-from spawn_manager import SpawnManager
+from detection.pose_detector import PoseDetector
+from detection.collision_detector import CollisionDetector
+from entities.game_objects import Target, Obstacle, PowerUp
+from managers.score_manager import ScoreManager
+from managers.sound_manager import SoundManager
+from rendering.renderer import GameRenderer
+from managers.spawn_manager import SpawnManager
 
 
 class GameEngine:

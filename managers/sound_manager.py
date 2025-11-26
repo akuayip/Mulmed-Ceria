@@ -273,5 +273,9 @@ class SoundManager:
 
     def cleanup(self):
         """Clean up pygame mixer."""
-        self.stop_music()
-        pygame.mixer.quit()
+        try:
+            if pygame.mixer.get_init():
+                self.stop_music()
+                pygame.mixer.quit()
+        except:
+            pass

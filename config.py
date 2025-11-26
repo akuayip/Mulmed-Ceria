@@ -1,0 +1,54 @@
+"""
+Game Configuration
+All game constants and settings in one place.
+"""
+
+# ============= SCREEN SETTINGS =============
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+FPS = 60
+
+# ============= GAME STATES =============
+GAME_MENU = 0
+GAME_COUNTDOWN = 1
+GAME_PLAY = 2
+GAME_OVER = 3
+GAME_CREDITS = 4
+GAME_GUIDE = 5
+
+# ============= GAMEPLAY SETTINGS =============
+STARTING_LIVES = 3
+COUNTDOWN_DURATION = 3.0
+CLICK_HOLD_TIME = 0.8
+GAME_OVER_INTRO_DURATION = 2.5
+HOVER_STABILITY_THRESHOLD = 100
+
+# ============= ASSET PATHS =============
+ASSETS_DIR = 'assets'
+IMAGES_DIR = f'{ASSETS_DIR}/images'
+SOUNDS_DIR = f'{ASSETS_DIR}/sounds'
+
+# ============= COLORS =============
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+CYAN = (0, 255, 255)
+GREEN = (0, 255, 0)
+GRAY = (150, 150, 150)
+RED = (255, 0, 0)
+
+# ============= UI SETTINGS =============
+BLOOD_ICON_SIZE = (50, 50)
+COUNTDOWN_IMAGE_SIZE = (200, 200)
+HAND_INDICATOR_RADIUS = 20
+HAND_FIST_RADIUS = 30
+CURSOR_RING_RADIUS = 10
+
+# ============= SPAWN SETTINGS =============
+INITIAL_SPAWN_DELAY = 1.0
+MIN_SPAWN_DELAY = 0.3
+SPAWN_DELAY_DECREASE_RATE = 0.95
+
+# ============= SCORING =============
+TARGET_HIT_SCORE = 10
+OBSTACLE_HIT_PENALTY = -5
+POWERUP_SCORE_BONUS = 25
