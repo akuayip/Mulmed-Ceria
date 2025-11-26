@@ -22,10 +22,11 @@ GAME_GUIDE = 5
 pygame.init()
 pygame.font.init()
 
+
 def get_available_cameras():
     """Deteksi kamera yang tersedia di sistem."""
     available_cameras = []
-    
+
     # Coba setiap kamera dari 0 hingga 10 (umumnya cukup untuk mengecek)
     for i in range(10):
         try:
@@ -38,41 +39,43 @@ def get_available_cameras():
             cap.release()
         except Exception as e:
             continue
-    
+
     return available_cameras
+
 
 def is_same_position(pos1, pos2, threshold=80):
     if pos1 is None or pos2 is None:
         return False
     return abs(pos1[0] - pos2[0]) < threshold and abs(pos1[1] - pos2[1]) < threshold
 
+
 def select_camera_terminal(available_cameras):
     """Menu pemilihan kamera via terminal."""
     print("\n" + "="*60)
     print("        PILIH KAMERA - CAM-FU")
     print("="*60)
-    
+
     if not available_cameras:
         print("Error: Tidak ada kamera yang ditemukan!")
         return None
-    
+
     print(f"\nKamera yang tersedia ({len(available_cameras)} kamera):")
     print("-" * 40)
-    
+
     for i, cam_idx in enumerate(available_cameras, 1):
         print(f"{i}. Kamera {cam_idx}")
-    
+
     print("\nKetik nomor kamera yang ingin digunakan (1-{}):".format(len(available_cameras)))
     print("Atau ketik 'q' untuk keluar")
-    
+
     while True:
         try:
             choice = input("\nPilihan Anda: ").strip().lower()
-            
+
             if choice == 'q':
                 print("Pembatalan pemilihan kamera. Keluar dari aplikasi.")
                 sys.exit(0)
-            
+
             # Validasi input
             try:
                 choice_idx = int(choice) - 1
@@ -81,41 +84,37 @@ def select_camera_terminal(available_cameras):
                     print(f"\n✓ Kamera {selected_camera} telah dipilih!")
                     return selected_camera
                 else:
-                    print(f"❌ Nomor tidak valid. Pilih antara 1-{len(available_cameras)} atau 'q' untuk keluar")
+                    print(
+                        f"❌ Nomor tidak valid. Pilih antara 1-{len(available_cameras)} atau 'q' untuk keluar")
             except ValueError:
                 print("❌ Input tidak valid. Masukkan nomor atau 'q' untuk keluar")
-                
+
         except KeyboardInterrupt:
             print("\n\nPembatalan pemilihan kamera. Keluar dari aplikasi.")
             sys.exit(0)
         except Exception as e:
             print(f"❌ Error: {e}. Coba lagi.")
 
+
 def select_camera_terminal_demo(available_cameras):
     """Demo terminal camera selection - untuk testing tanpa input interaktif."""
     print("\n" + "="*60)
     print("        DEMO PILIH KAMERA TERMINAL - CAM-FU")
     print("="*60)
-    
+
     if not available_cameras:
         print("Error: Tidak ada kamera yang ditemukan!")
         return None
-    
+
     print(f"\nKamera yang tersedia ({len(available_cameras)} kamera):")
     print("-" * 40)
-    
+
     for i, cam_idx in enumerate(available_cameras, 1):
         print(f"{i}. Kamera {cam_idx}")
-    
+
     print(f"\n✓ Auto-pilih kamera {available_cameras[0]} (demo mode)")
     return available_cameras[0]
 
-def stable_hover(current_pos, prev_pos, threshold=80):
-    if current_pos is None:
-        return False
-    if prev_pos is None:
-        return True
-    return is_same_position(current_pos, prev_pos, threshold)
 
 def main():
     SCREEN_W, SCREEN_H = 1280, 720
@@ -129,24 +128,26 @@ def main():
     print("        CAM-FU - POSE FIGHTING GAME")
     print("="*60)
     print("\nMencari kamera yang tersedia...")
-    
+
     available_cameras = get_available_cameras()
-    
+
     if not available_cameras:
         print("Error: Tidak ada kamera yang ditemukan.")
         print("Pastikan kamera web telah terhubung dan tidak digunakan oleh aplikasi lain.")
         sys.exit()
-    
-    print(f"\n✓ Berhasil menemukan {len(available_cameras)} kamera: {available_cameras}")
-    
+
+    print(
+        f"\n✓ Berhasil menemukan {len(available_cameras)} kamera: {available_cameras}")
+
     # Pilih kamera via terminal
     if len(available_cameras) == 1:
         selected_camera = available_cameras[0]
-        print(f"\n✓ Menggunakan kamera {selected_camera} (hanya satu kamera tersedia)")
+        print(
+            f"\n✓ Menggunakan kamera {selected_camera} (hanya satu kamera tersedia)")
     else:
         print(f"\nSilakan pilih kamera yang akan digunakan:")
         selected_camera = select_camera_terminal(available_cameras)
-        
+
         if selected_camera is None:
             print("Gagal memilih kamera. Keluar dari aplikasi.")
             sys.exit()
@@ -161,7 +162,7 @@ def main():
     pose_detector = PoseDetector()
     game_renderer = GameRenderer(screen, assets_dir='assets/images')
     spawn_manager = SpawnManager(SCREEN_W, SCREEN_H)
-    
+
     game_engine = GameEngine(
         screen=screen,
         pose_detector=pose_detector,
@@ -170,20 +171,20 @@ def main():
     )
 
     menu = MenuManager(screen, 'assets/images')
-    
+
     # Sound manager
     sound_manager = SoundManager()
-    
+
     # Connect sound manager to menu
     menu.sound_manager = sound_manager
 
     # Input states
     current_state = GAME_MENU
-    
+
     # Countdown variables
     countdown_timer = 3.0
     countdown_images = {}
-    
+
     # Load countdown images
     for i in [1, 2, 3]:
         img_path = f'assets/images/number_{i}.png'
@@ -193,22 +194,26 @@ def main():
             countdown_images[i] = pygame.transform.smoothscale(img, (200, 200))
         else:
             print(f"[Warning] Countdown image not found: {img_path}")
-    
+
     # Start menu music
     sound_manager.play_music('menu', loops=-1, fade_ms=1000)
-    prev_hand = None
-    click_timer = 0.0
-    CLICK_HOLD = 0.8
+
+    # Anti-spam mechanism for fist clicks
+    last_fist_time = 0
+    FIST_COOLDOWN = 0.5  # 500ms cooldown between fist clicks
+
     running = True
 
     while running:
         dt = clock.tick(FPS) / 1000.0
+        current_time = pygame.time.get_ticks() / 1000.0  # Current time in seconds
 
         # Event Handling
         for e in pygame.event.get():
             if e.type == pygame.VIDEORESIZE:
                 SCREEN_W, SCREEN_H = e.w, e.h
-                screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.RESIZABLE)
+                screen = pygame.display.set_mode(
+                    (SCREEN_W, SCREEN_H), pygame.RESIZABLE)
                 game_renderer.update_screen_size(SCREEN_W, SCREEN_H)
                 spawn_manager.update_screen_size(SCREEN_W, SCREEN_H)
             if e.type == pygame.QUIT:
@@ -229,7 +234,8 @@ def main():
                 if e.key == pygame.K_ESCAPE:
                     if current_state in (GAME_CREDITS, GAME_GUIDE, GAME_COUNTDOWN, GAME_PLAY):
                         current_state = GAME_MENU
-                        sound_manager.crossfade_music('menu', fade_out_ms=500, fade_in_ms=500)
+                        sound_manager.crossfade_music(
+                            'menu', fade_out_ms=500, fade_in_ms=500)
                 if current_state == GAME_OVER and e.key == pygame.K_r:
                     current_state = GAME_COUNTDOWN
                     countdown_timer = 3.0
@@ -277,8 +283,10 @@ def main():
                 )
 
             # Only check hover when NOT in gameplay
-            hover_right = menu.check_button_hover(right_idx_pos) if current_state != GAME_PLAY else None
-            hover_left = menu.check_button_hover(left_idx_pos) if current_state != GAME_PLAY else None
+            hover_right = menu.check_button_hover(
+                right_idx_pos) if current_state != GAME_PLAY else None
+            hover_left = menu.check_button_hover(
+                left_idx_pos) if current_state != GAME_PLAY else None
 
             if hover_right:
                 active_hand_pos = right_idx_pos
@@ -295,7 +303,8 @@ def main():
             game_renderer.clear_screen()
         else:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_py = pygame.image.frombuffer(frame_rgb.tobytes(), frame.shape[1::-1], "RGB")
+            frame_py = pygame.image.frombuffer(
+                frame_rgb.tobytes(), frame.shape[1::-1], "RGB")
             frame_py = pygame.transform.scale(frame_py, (SCREEN_W, SCREEN_H))
             screen.blit(frame_py, (0, 0))
 
@@ -303,43 +312,45 @@ def main():
         if current_state == GAME_MENU:
             # Ensure menu music is playing
             if sound_manager.current_music != 'menu':
-                sound_manager.crossfade_music('menu', fade_out_ms=500, fade_in_ms=500)
-            
-            menu.draw_menu()
-            hovered = menu.check_button_hover(active_hand_pos)
+                sound_manager.crossfade_music(
+                    'menu', fade_out_ms=500, fade_in_ms=500)
 
-            if hovered and stable_hover(active_hand_pos, prev_hand, 100):
-                click_timer += dt
-                if click_timer >= CLICK_HOLD:
-                    menu.play_button_sound()
-                    if hovered == "start":
-                        current_state = GAME_COUNTDOWN
-                        countdown_timer = 3.0
-                        game_engine.reset_game()
-                        sound_manager.stop_music()
-                        sound_manager.play_sound('countdown')
-                    elif hovered == "credits":
-                        current_state = GAME_CREDITS
-                    elif hovered == "guide":
-                        current_state = GAME_GUIDE
-                        current_state = GAME_GUIDE
-                    click_timer = 0.0
-            else:
-                click_timer = 0.0
+            menu.draw_menu()
+
+            # Get hand info for fist detection
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            hand_info = pose_detector.get_hand_info(
+                frame_rgb, SCREEN_W, SCREEN_H)
+
+            # Check for fist click on buttons (with cooldown)
+            fist_button = menu.check_button_fist_click(hand_info)
+            if fist_button and (current_time - last_fist_time) > FIST_COOLDOWN:
+                last_fist_time = current_time
+                menu.play_button_sound()
+                if fist_button == "start":
+                    current_state = GAME_COUNTDOWN
+                    countdown_timer = 3.0
+                    game_engine.reset_game()
+                    sound_manager.stop_music()
+                    sound_manager.play_sound('countdown')
+                elif fist_button == "credits":
+                    current_state = GAME_CREDITS
+                elif fist_button == "guide":
+                    current_state = GAME_GUIDE
 
         elif current_state == GAME_COUNTDOWN:
             # Draw black background or play_bg
             game_renderer.clear_screen()
-            
+
             # Add dark overlay
             dark_overlay = pygame.Surface((SCREEN_W, SCREEN_H))
             dark_overlay.set_alpha(180)  # 0 = transparent, 255 = opaque
             dark_overlay.fill((0, 0, 0))
             screen.blit(dark_overlay, (0, 0))
-            
+
             # Update countdown timer
             countdown_timer -= dt
-            
+
             # Determine which number to show (3, 2, 1)
             if countdown_timer > 2.0:
                 current_number = 3
@@ -352,7 +363,7 @@ def main():
                 current_state = GAME_PLAY
                 sound_manager.play_music('gameplay', loops=-1, fade_ms=500)
                 continue
-            
+
             # Draw countdown number in center
             if current_number in countdown_images:
                 img = countdown_images[current_number]
@@ -361,8 +372,10 @@ def main():
             else:
                 # Fallback: draw text if image not found
                 font_countdown = pygame.font.Font(None, 200)
-                text = font_countdown.render(str(current_number), True, (255, 255, 255))
-                text_rect = text.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2))
+                text = font_countdown.render(
+                    str(current_number), True, (255, 255, 255))
+                text_rect = text.get_rect(
+                    center=(SCREEN_W // 2, SCREEN_H // 2))
                 screen.blit(text, text_rect)
 
         elif current_state == GAME_PLAY:
@@ -373,84 +386,91 @@ def main():
                 SCREEN_W,
                 SCREEN_H
             )
-            
+
             game_engine.update(dt, landmarks, hand_info)
-            
+
             # Background already drawn above in "Background Rendering" section
-            
+
             # Draw game elements
-            game_renderer.draw_game_objects(game_engine.targets, game_engine.obstacles, game_engine.powerups)
-            
+            game_renderer.draw_game_objects(
+                game_engine.targets, game_engine.obstacles, game_engine.powerups)
+
             if landmarks:
                 game_renderer.draw_stickman(landmarks, pose_detector)
-            
+
             game_renderer.draw_hand_indicators(hand_info)
             game_renderer.draw_ui(game_engine.score_manager, clock, hand_info)
-            
+
             if game_engine.score_manager.game_over:
                 current_state = GAME_OVER
 
         elif current_state == GAME_CREDITS:
             menu.draw_credits_screen()
-            hovered = menu.check_button_hover(active_hand_pos)
-            if hovered == "back" and stable_hover(active_hand_pos, prev_hand, 100):
-                click_timer += dt
-                if click_timer >= CLICK_HOLD:
-                    menu.play_button_sound()
-                    current_state = GAME_MENU
-                    click_timer = 0.0
-            else:
-                click_timer = 0.0
+
+            # Get hand info for fist detection
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            hand_info = pose_detector.get_hand_info(
+                frame_rgb, SCREEN_W, SCREEN_H)
+
+            # Check for fist click on back button (with cooldown)
+            fist_button = menu.check_button_fist_click(hand_info)
+            if fist_button == "back" and (current_time - last_fist_time) > FIST_COOLDOWN:
+                last_fist_time = current_time
+                menu.play_button_sound()
+                current_state = GAME_MENU
 
         elif current_state == GAME_GUIDE:
             menu.draw_guide_screen()
-            hovered = menu.check_button_hover(active_hand_pos)
-            if hovered == "back" and stable_hover(active_hand_pos, prev_hand, 100):
-                click_timer += dt
-                if click_timer >= CLICK_HOLD:
-                    menu.play_button_sound()
-                    current_state = GAME_MENU
-                    click_timer = 0.0
-            else:
-                click_timer = 0.0
+
+            # Get hand info for fist detection
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            hand_info = pose_detector.get_hand_info(
+                frame_rgb, SCREEN_W, SCREEN_H)
+
+            # Check for fist click on back button (with cooldown)
+            fist_button = menu.check_button_fist_click(hand_info)
+            if fist_button == "back" and (current_time - last_fist_time) > FIST_COOLDOWN:
+                last_fist_time = current_time
+                menu.play_button_sound()
+                current_state = GAME_MENU
 
         elif current_state == GAME_OVER:
             # Draw game elements with game over overlay
-            game_renderer.draw_game_objects(game_engine.targets, game_engine.obstacles, game_engine.powerups)
-            
+            game_renderer.draw_game_objects(
+                game_engine.targets, game_engine.obstacles, game_engine.powerups)
+
             if landmarks:
                 game_renderer.draw_stickman(landmarks, pose_detector)
-            
+
             # hand_info untuk game over screen (kosong jika tidak ada)
             empty_hand_info = {
                 'left_hand': {'position': None, 'is_fist': False},
                 'right_hand': {'position': None, 'is_fist': False}
             }
-            game_renderer.draw_ui(game_engine.score_manager, clock, empty_hand_info)
+            game_renderer.draw_ui(
+                game_engine.score_manager, clock, empty_hand_info)
 
         # Cursor Rendering (Hidden During Gameplay)
         if current_state != GAME_PLAY:
 
             if right_idx_pos:
-                pygame.draw.circle(screen, (150, 150, 150), right_idx_pos, 10, 2)
+                pygame.draw.circle(screen, (150, 150, 150),
+                                   right_idx_pos, 10, 2)
             if left_idx_pos:
-                pygame.draw.circle(screen, (150, 150, 150), left_idx_pos, 10, 2)
+                pygame.draw.circle(screen, (150, 150, 150),
+                                   left_idx_pos, 10, 2)
 
             if active_hand_pos:
-                pygame.draw.circle(screen, (0, 255, 255), active_hand_pos, 20, 3)
-
-                if click_timer > 0:
-                    progress = min(click_timer / CLICK_HOLD, 1.0)
-                    radius = int(20 * progress)
-                    pygame.draw.circle(screen, (0, 255, 0), active_hand_pos, radius)
+                pygame.draw.circle(screen, (0, 255, 255),
+                                   active_hand_pos, 20, 3)
 
         pygame.display.flip()
-        prev_hand = active_hand_pos
 
     cap.release()
     sound_manager.cleanup()
     game_engine.cleanup()
     sys.exit()
+
 
 if __name__ == "__main__":
     main()
