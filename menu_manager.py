@@ -8,9 +8,9 @@ class MenuManager:
 
     # Konfigurasi tombol
     BUTTON_CONFIG = {
-        'start':   {'file': 'start.png',  'pos': (0.5, 0.60)},
-        'guide':   {'file': 'guide.png',  'pos': (0.5, 0.75)},
-        'credits': {'file': 'credit.png', 'pos': (0.5, 0.90)},
+        'start':   {'file': 'start.png',  'pos': (0.5, 0.45)},
+        'guide':   {'file': 'guide.png',  'pos': (0.5, 0.60)},
+        'credits': {'file': 'credit.png', 'pos': (0.5, 0.75)},
         'back':    {'file': 'back.png',   'pos': (0.10, 0.88)}
     }
 
