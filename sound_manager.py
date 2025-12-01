@@ -27,8 +27,8 @@ class SoundManager:
     
     # Background music configurations
     MUSIC_FILES = {
-        'menu': 'menu_music.mp3',
-        'gameplay': 'gameplay_music.mp3', # diganti jika sudah ada
+        'menu': 'prologue.wav',
+        'gameplay': 'battle.wav', # diganti jika sudah ada
     }
 
     def __init__(self, sounds_dir='assets/sounds', music_dir='assets/sounds'):

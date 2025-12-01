@@ -52,16 +52,45 @@ class GameRenderer:
         
         # Load gameplay background
         self.play_bg = None
-        play_bg_path = os.path.join(self.assets_dir, 'main_page.png') # nanti di ubah
+        play_bg_path = os.path.join(self.assets_dir, 'main_page.png')
         if os.path.exists(play_bg_path):
             self.play_bg = pygame.image.load(play_bg_path).convert()
             self.play_bg = pygame.transform.scale(self.play_bg, (self.screen_width, self.screen_height))
         else:
             print(f"[Warning] Gameplay background not found: {play_bg_path}")
         
+        # --- ASET GAME OVER ---
+        # 1. Gambar Game Over
+        self.game_over_image = None
+        game_over_path = os.path.join(self.assets_dir, 'game_over.png')
+        if os.path.exists(game_over_path):
+            self.game_over_image = pygame.image.load(game_over_path).convert_alpha()
+        else:
+            print(f"[Warning] Game over image not found: {game_over_path}")
+        
+        # 2. Background Landing Page
+        self.landing_page_bg = None
+        landing_path = os.path.join(self.assets_dir, 'landing_page.png')
+        if os.path.exists(landing_path):
+            self.landing_page_bg = pygame.image.load(landing_path).convert()
+            self.landing_page_bg = pygame.transform.scale(self.landing_page_bg, (self.screen_width, self.screen_height))
+        else:
+            print(f"[Warning] Landing page background not found: {landing_path}")
+        
+        # 3. Tombol Menu
+        self.menu_button = None
+        menu_path = os.path.join(self.assets_dir, 'menu.png')
+        if os.path.exists(menu_path):
+            self.menu_button = pygame.image.load(menu_path).convert_alpha()
+            self.menu_button = pygame.transform.smoothscale(self.menu_button, (80, 80))
+        else:
+            print(f"[Warning] Menu button not found: {menu_path}")
+        
         # MediaPipe pose landmarks
         self.mp_pose = mp.solutions.pose.PoseLandmark
-    
+        
+        self.game_over_played = False
+
     def update_screen_size(self, new_w, new_h):
         """Update screen dimensions when resized."""
         self.screen_width = new_w
@@ -73,6 +102,13 @@ class GameRenderer:
             if os.path.exists(play_bg_path):
                 self.play_bg = pygame.image.load(play_bg_path).convert()
                 self.play_bg = pygame.transform.scale(self.play_bg, (new_w, new_h))
+        
+        # Rescale landing page if exists
+        if self.landing_page_bg:
+            landing_path = os.path.join(self.assets_dir, 'landing_page.png')
+            if os.path.exists(landing_path):
+                self.landing_page_bg = pygame.image.load(landing_path).convert()
+                self.landing_page_bg = pygame.transform.scale(self.landing_page_bg, (new_w, new_h))
 
     def clear_screen(self):
         """Fills the screen with background or black."""
@@ -95,7 +131,6 @@ class GameRenderer:
     def draw_hand_indicators(self, hand_info):
         """
         Draw visual indicators for hands and fist status.
-        
         Args:
             hand_info: Dictionary containing left_hand and right_hand info
         """
@@ -136,11 +171,6 @@ class GameRenderer:
     def draw_ui(self, score_manager, clock, hand_info):
         """
         Draw UI elements (score, lives, hand status, etc.).
-        
-        Args:
-            score_manager: ScoreManager instance
-            clock: Pygame clock
-            hand_info: Hand tracking information
         """
         # === BLOOD/LIVES (TOP LEFT CORNER) ===
         blood_size = 50  # Ukuran blood (50x50 px)
@@ -231,41 +261,68 @@ class GameRenderer:
         inst_y = self.screen_height - 25
         self.screen.blit(inst_text, (inst_x, inst_y))
 
-        # === GAME OVER SCREEN (CENTER) ===
-        if score_manager.game_over:
+    def draw_game_over_screen(self, score_manager, play_duration=0, phase=1):
+        """
+        Draws the Game Over screen with sequential animation.
+        Phase 1: Black Screen + Game Over Logo (Intro)
+        Phase 2: Landing BG + Score + Time + Menu Button
+        """
+        center_x = self.screen_width // 2
+        center_y = self.screen_height // 2
+
+        if phase == 1:
+            # === FASE 1: LAYAR HITAM + LOGO GAME OVER ===
             overlay = pygame.Surface((self.screen_width, self.screen_height))
-            overlay.set_alpha(200)
+            overlay.set_alpha(150) 
             overlay.fill(self.BLACK)
             self.screen.blit(overlay, (0, 0))
 
-            game_over_text = self.font_large.render("GAME OVER", True, self.RED)
-            final_score_text = self.font_medium.render(
-                f"Final Score: {score_manager.score}", True, self.WHITE
-            )
-            restart_text = self.font_small.render(
-                "Press R to Restart | ESC to Quit", True, self.WHITE
-            )
+            # Gambar Logo Game Over di tengah
+            if self.game_over_image:
+                img_width = int(self.screen_width * 0.5)
+                img_height = int(self.screen_height * 0.4)
+                scaled_img = pygame.transform.scale(self.game_over_image, (img_width, img_height))
+                img_x = (self.screen_width - img_width) // 2
+                img_y = (self.screen_height - img_height) // 2
+                self.screen.blit(scaled_img, (img_x, img_y))
+            else:
+                # Fallback teks jika gambar tidak ada
+                text = self.font_large.render("GAME OVER", True, self.RED)
+                text_rect = text.get_rect(center=(center_x, center_y))
+                self.screen.blit(text, text_rect)
 
-            self.screen.blit(
-                game_over_text,
-                (self.screen_width // 2 - game_over_text.get_width() // 2, 250)
-            )
-            self.screen.blit(
-                final_score_text,
-                (self.screen_width // 2 - final_score_text.get_width() // 2, 320)
-            )
-            self.screen.blit(
-                restart_text,
-                (self.screen_width // 2 - restart_text.get_width() // 2, 380)
-            )
+        elif phase == 2:
+            # === FASE 2: HASIL AKHIR (Background + Skor) ===
+            # 1. Background Landing Page
+            if self.landing_page_bg:
+                self.screen.blit(self.landing_page_bg, (0, 0))
+            else:
+                self.screen.fill(self.BLACK)
 
+            # 2. Hitung Waktu (Menit:Detik)
+            minutes = int(play_duration) // 60
+            seconds = int(play_duration) % 60
+            time_str = f"{minutes:02d}:{seconds:02d}"
+
+            # 3. Tampilkan Skor dan Waktu
+            score_text = self.font_medium.render(f"FINAL SCORE: {score_manager.score}", True, self.WHITE)
+            time_text = self.font_medium.render(f"TIME PLAYED: {time_str}", True, self.YELLOW)
+            
+            score_rect = score_text.get_rect(center=(center_x, center_y + 35))
+            time_rect = time_text.get_rect(center=(center_x, center_y + 75))
+            
+            self.screen.blit(score_text, score_rect)
+            self.screen.blit(time_text, time_rect)
+
+            # 5. Tombol Menu (Pojok Kiri Bawah)
+            if self.menu_button:
+                self.screen.blit(self.menu_button, (30, self.screen_height - 130))
+            
 
     def draw_stickman(self, landmarks, pose_detector):
         """
         Draw stickman overlay on game screen.
-        Args:
-            landmarks: Pose landmarks
-            pose_detector: The PoseDetector instance (to use its get_landmark_position)
+        (KEMBALI KE KODE ORIGINAL PANJANG)
         """
         if not landmarks:
             return
@@ -274,6 +331,7 @@ class GameRenderer:
         LINE_THICKNESS = 65       
         JOINT_RADIUS = LINE_THICKNESS // 2
 
+        # Get landmarks explicitly
         nose = pose_detector.get_landmark_position(landmarks, self.mp_pose.NOSE.value, self.screen_width, self.screen_height)
         left_ear = pose_detector.get_landmark_position(landmarks, self.mp_pose.LEFT_EAR.value, self.screen_width, self.screen_height)
         right_ear = pose_detector.get_landmark_position(landmarks, self.mp_pose.RIGHT_EAR.value, self.screen_width, self.screen_height)
@@ -293,7 +351,6 @@ class GameRenderer:
         right_knee = pose_detector.get_landmark_position(landmarks, self.mp_pose.RIGHT_KNEE.value, self.screen_width, self.screen_height)
         right_ankle = pose_detector.get_landmark_position(landmarks, self.mp_pose.RIGHT_ANKLE.value, self.screen_width, self.screen_height)
         
-
         neck_point = None
         pelvis_point = None
 
@@ -323,7 +380,6 @@ class GameRenderer:
             head_center_y_calc = nose[1] 
             head_center = (head_center_x_calc, head_center_y_calc)
             pygame.draw.circle(self.screen, BODY_COLOR, head_center, head_radius) 
-
 
         if neck_point and pelvis_point:
             pygame.draw.line(self.screen, BODY_COLOR, neck_point, pelvis_point, LINE_THICKNESS)
